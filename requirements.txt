@@ -1,0 +1,5 @@
+pandas
+yfinance
+openpyxl
+tabulate
+numpy<2.0
