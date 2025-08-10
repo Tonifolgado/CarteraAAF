@@ -6,7 +6,8 @@
         "precio_actual": 120.0,
         "importe_total": 5640.0,
         "dividendos": "No",
-        "tipo_activo": "PP"
+        "tipo_activo": "PP",
+        "broker": "sant"
     },
     {
         "s\u00edmbolo": "0P0000RYC6.F",
@@ -15,7 +16,8 @@
         "precio_actual": 31.7101,
         "importe_total": 19248.0307,
         "dividendos": "No",
-        "tipo_activo": "PP"
+        "tipo_activo": "PP",
+        "broker": "cxbank"
     },
     {
         "s\u00edmbolo": "0P00000VSG.F",
@@ -24,7 +26,8 @@
         "precio_actual": 968.426,
         "importe_total": 6778.982,
         "dividendos": "No",
-        "tipo_activo": "FON"
+        "tipo_activo": "FON",
+        "broker": "bbva"
     },
     {
         "s\u00edmbolo": "HDLV.DE",
@@ -33,7 +36,8 @@
         "precio_actual": 30.66,
         "importe_total": 1533.0,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ETF"
+        "tipo_activo": "ETF",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "IWDP.AS",
@@ -42,7 +46,8 @@
         "precio_actual": 20.302,
         "importe_total": 1015.1,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ETF"
+        "tipo_activo": "ETF",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "IWRD.AS",
@@ -51,7 +56,8 @@
         "precio_actual": 74.015,
         "importe_total": 1850.375,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ETF"
+        "tipo_activo": "ETF",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "EXSA.DE",
@@ -60,7 +66,8 @@
         "precio_actual": 53.23,
         "importe_total": 1596.8999999999999,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ETF"
+        "tipo_activo": "ETF",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "ENO",
@@ -69,7 +76,8 @@
         "precio_actual": 22.31,
         "importe_total": 892.4,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     },
     {
         "s\u00edmbolo": "LOG",
@@ -78,7 +86,8 @@
         "precio_actual": 27.64,
         "importe_total": 1105.6,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     },
     {
         "s\u00edmbolo": "RED",
@@ -87,7 +96,8 @@
         "precio_actual": 16.57,
         "importe_total": 497.1,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     },
     {
         "s\u00edmbolo": "IBE",
@@ -96,7 +106,8 @@
         "precio_actual": 15.27,
         "importe_total": 626.0699999999999,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     },
     {
         "s\u00edmbolo": "ACS",
@@ -105,7 +116,8 @@
         "precio_actual": 58.6,
         "importe_total": 1465.0,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     },
     {
         "s\u00edmbolo": "SOBA",
@@ -114,7 +126,8 @@
         "precio_actual": 23.88,
         "importe_total": 477.59999999999997,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "INL",
@@ -123,7 +136,8 @@
         "precio_actual": 16.59,
         "importe_total": 331.8,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "KHNZ",
@@ -132,7 +146,8 @@
         "precio_actual": 23.75,
         "importe_total": 475.0,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "LTP",
@@ -141,7 +156,8 @@
         "precio_actual": 29.48,
         "importe_total": 589.6,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "GUI",
@@ -150,7 +166,8 @@
         "precio_actual": 21.0,
         "importe_total": 420.0,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "SHELL",
@@ -159,7 +176,8 @@
         "precio_actual": 31.2,
         "importe_total": 468.0,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "UNA",
@@ -168,7 +186,8 @@
         "precio_actual": 52.16,
         "importe_total": 1043.1999999999998,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "BAC",
@@ -177,7 +196,8 @@
         "precio_actual": 45.66,
         "importe_total": 913.1999999999999,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "W8A",
@@ -186,7 +206,8 @@
         "precio_actual": 10.12,
         "importe_total": 252.99999999999997,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "CTP2",
@@ -195,7 +216,8 @@
         "precio_actual": 29.01,
         "importe_total": 580.2,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "PFE",
@@ -204,7 +226,8 @@
         "precio_actual": 23.49,
         "importe_total": 352.34999999999997,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "degiro"
     },
     {
         "s\u00edmbolo": "ENG",
@@ -213,6 +236,7 @@
         "precio_actual": 13.13,
         "importe_total": 525.2,
         "dividendos": "S\u00ed",
-        "tipo_activo": "ACC"
+        "tipo_activo": "ACC",
+        "broker": "ocean"
     }
 ]

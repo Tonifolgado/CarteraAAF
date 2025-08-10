@@ -5,15 +5,9 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 
-# Ruta del archivo para persistir los datos
 CARPETA_ARCHIVO = "cartera.json"
 
 def obtener_precios_actuales(simbolos):
-    """
-    Obtiene los precios actuales para una lista de símbolos (tickers).
-    Args:simbolos: Una lista de strings con los símbolos de los activos.
-    Returns:Un diccionario mapeando cada símbolo a su precio actual (float).
-    """
     print("Obteniendo precios de mercado actuales...")
     tickers = yf.Tickers(" ".join(simbolos))
     precios = {}
@@ -31,27 +25,8 @@ def obtener_precios_actuales(simbolos):
             precios[simbolo] = 0.0
     print("Precios obtenidos.")
     return precios
-def mostrar_cartera(df):
-    """
-    Muestra la cartera en un formato de tabla.
-
-    Args:
-        df: El DataFrame que contiene los datos a mostrar.
-    """
-    if df.empty:
-        print("\n--- Cartera ---")
-        print("No hay activos en la cartera.")
-        return
-
-    df_display = df.copy()
-    df_display['precio_actual'] = df_display['precio_actual'].map('€{:.2f}'.format)
-    df_display['importe_total'] = df_display['importe_total'].map('€{:.2f}'.format)
-
-    print("\n--- Cartera ---")
-    print(tabulate(df_display, headers='keys', tablefmt='psql', showindex=False))
 
 def cargar_cartera():
-    """Carga la cartera desde un archivo JSON."""
     try:
         with open(CARPETA_ARCHIVO, "r") as archivo:
             return json.load(archivo)
@@ -61,202 +36,59 @@ def cargar_cartera():
         return []
 
 def guardar_cartera(cartera):
-    """Guarda la cartera en un archivo JSON."""
     with open(CARPETA_ARCHIVO, "w") as archivo:
         json.dump(cartera, archivo, indent=4)
 
-def iniciar_gui():
-    """Inicia la interfaz gráfica de usuario."""
+def ventana_agregar_activos():
+    ventana = tk.Toplevel()
+    ventana.title("Agregar Nuevos Activos")
+    ventana.geometry("600x400")
+    
     cartera = cargar_cartera()
-
-    def actualizar_tabla():
-        for widget in frame_tabla.winfo_children():
-            widget.destroy()
-
-        if not cartera:
-            tk.Label(frame_tabla, text="No hay elementos en la cartera.").pack()
-            return
-
-        cartera_df = pd.DataFrame(cartera)
-        # Ordenar por tipo de activo y luego por símbolo
-        orden_tipos = {'ACC': 0, 'ETF': 1, 'PP': 2, 'FON': 3}
-        cartera_df['orden_tipo'] = cartera_df['tipo_activo'].map(orden_tipos)
-        cartera_df = cartera_df.sort_values(['orden_tipo', 'símbolo']).drop('orden_tipo', axis=1)
-        columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', 'dividendos', 'tipo_activo']
-
-        # Crear encabezados de la tabla
-        anchuras = {
-            "símbolo": 10,
-            "título": 25,
-            "cantidad": 8,
-            "precio_actual": 12,
-            "importe_total": 12,
-            "dividendos": 10,
-            "tipo_activo": 8
-        }
-        
-        for i, columna in enumerate(columnas):
-            anchor = "w" if columna == "título" else "center"
-            width = anchuras.get(columna, 15)
-            tk.Label(frame_tabla, text=columna, borderwidth=1, relief="solid", width=width, 
-                    bg="yellow", fg="blue", font=("Arial", 12, "bold"), anchor=anchor).grid(row=0, column=i, sticky="ew")
-
-        # Crear filas de la tabla
-        for index, row in cartera_df.iterrows():
-            # Determinar el color de fondo según el tipo de activo
-            tipo_activo = row.get('tipo_activo', '')
-            if tipo_activo == 'PP':
-                bg_color = "#ADD8E6"
-            elif tipo_activo == 'FON':
-                bg_color = "#90EE90"
-            elif tipo_activo == 'ETF':
-                bg_color = "#FFFFE0"
-            elif tipo_activo == 'ACC':
-                bg_color = "#FFDAB9"
-            else:
-                bg_color = "white"
-
-            for i, columna in enumerate(columnas):
-                valor = row.get(columna, '')
-                if columna == 'importe_total':
-                    valor = f"{valor:.2f}"
-                anchor = "w" if columna == "título" else "center"
-                width = anchuras.get(columna, 15)
-                tk.Label(frame_tabla, text=str(valor), borderwidth=1, relief="solid", width=width, 
-                        anchor=anchor, bg=bg_color).grid(row=index + 1, column=i, sticky="ew")
-
-            # Botones de acción
-            tk.Button(frame_tabla, text="Editar", command=lambda idx=index: editar_elemento(idx)).grid(row=index + 1, column=len(columnas), sticky="ew")
-            
-            def eliminar_elemento(idx):
-                del cartera[idx]
-                guardar_cartera(cartera)
-                actualizar_tabla()
-
-            tk.Button(frame_tabla, text="Eliminar", command=lambda idx=index: eliminar_elemento(idx)).grid(row=index + 1, column=len(columnas) + 1, sticky="ew")
-
-        # Configurar el ancho de las columnas
-        for i, columna in enumerate(columnas):
-            frame_tabla.grid_columnconfigure(i, weight=0, minsize=anchuras.get(columna, 15) * 8)
-
-        # Calcular totales
-        total_cantidad_acc = sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == 'ACC')
-        total_cantidad_etf = sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == 'ETF')
-        total_cantidad_pp = sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == 'PP')
-        total_cantidad_fon = sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == 'FON')
-        total_importe_etf = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == 'ETF')
-        total_importe_pp = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == 'PP')
-        total_importe_acc = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == 'ACC')
-        total_importe_fon = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == 'FON')
-        total_importe_todos = sum(item['importe_total'] for item in cartera)
-
-        # Mostrar totales debajo de la tabla
-        for widget in totales_frame.winfo_children():
-            widget.destroy()
-
-        # Crear marco para las dos columnas
-        columnas_totales = tk.Frame(totales_frame)
-        columnas_totales.pack(anchor="w", pady=10)
-
-        # Columna de cantidades
-        columna_cantidades = tk.Frame(columnas_totales)
-        columna_cantidades.grid(row=0, column=0, padx=10)
-        tk.Label(columna_cantidades, text="Cantidades", font=("Arial", 12, "bold")).pack(anchor="w")
-        tk.Label(columna_cantidades, text=f"ACC: {total_cantidad_acc}").pack(anchor="w")
-        tk.Label(columna_cantidades, text=f"ETF: {total_cantidad_etf}").pack(anchor="w")
-        tk.Label(columna_cantidades, text=f"PP: {total_cantidad_pp}").pack(anchor="w")
-        tk.Label(columna_cantidades, text=f"FON: {total_cantidad_fon}").pack(anchor="w")
-
-        # Columna de importes
-        columna_importes = tk.Frame(columnas_totales)
-        columna_importes.grid(row=0, column=1, padx=10)
-        tk.Label(columna_importes, text="Importes", font=("Arial", 12, "bold")).pack(anchor="w")
-        tk.Label(columna_importes, text=f"ACC: {total_importe_acc:.2f}€").pack(anchor="w")
-        tk.Label(columna_importes, text=f"ETF: {total_importe_etf:.2f}€").pack(anchor="w")
-        tk.Label(columna_importes, text=f"PP: {total_importe_pp:.2f}€").pack(anchor="w")
-        tk.Label(columna_importes, text=f"FON: {total_importe_fon:.2f}€").pack(anchor="w")
-
-        # Mostrar cantidad total de activos e importe total
-        tk.Label(totales_frame, text=f"Cantidad total de activos: {total_cantidad_acc + total_cantidad_etf + total_cantidad_pp + total_cantidad_fon}", font=("Arial", 14, "bold")).pack(anchor="w", pady=10)
-        tk.Label(totales_frame, text=f"Importe total de todos los activos: {total_importe_todos:.2f}€", font=("Arial", 14, "bold")).pack(anchor="w", pady=10)
-
-    def editar_elemento(idx):
-        elemento = cartera[idx]
-
-        # Crear ventana de edición
-        ventana_edicion = tk.Toplevel(root)
-        ventana_edicion.title("Editar elemento")
-
-        tk.Label(ventana_edicion, text="Cantidad:").grid(row=0, column=0, padx=10, pady=5)
-        entry_cantidad_edicion = tk.Entry(ventana_edicion)
-        entry_cantidad_edicion.insert(0, elemento['cantidad'])
-        entry_cantidad_edicion.grid(row=0, column=1, padx=10, pady=5)
-
-        tk.Label(ventana_edicion, text="Precio actual:").grid(row=1, column=0, padx=10, pady=5)
-        entry_precio_actual_edicion = tk.Entry(ventana_edicion)
-        entry_precio_actual_edicion.insert(0, elemento['precio_actual'])
-        entry_precio_actual_edicion.grid(row=1, column=1, padx=10, pady=5)
-
-        var_dividendos_edicion = tk.BooleanVar(value=elemento['dividendos'] == 'Sí')
-        tk.Checkbutton(ventana_edicion, text="Tiene dividendos", variable=var_dividendos_edicion).grid(row=2, columnspan=2, pady=5)
-
-        tk.Label(ventana_edicion, text="Tipo de activo:").grid(row=3, column=0, padx=10, pady=5)
-        tipo_activo_var_edicion = tk.StringVar(value=elemento.get('tipo_activo', ''))
-        tipo_activo_combobox_edicion = tk.OptionMenu(ventana_edicion, tipo_activo_var_edicion, 'ACC', 'ETF', 'PP', 'FON')
-        tipo_activo_combobox_edicion.grid(row=3, column=1, padx=10, pady=5)
-
-        def guardar_edicion():
-            nueva_cantidad = entry_cantidad_edicion.get().strip()
-            nuevo_precio_actual = entry_precio_actual_edicion.get().strip()
-
-            if not nueva_cantidad.isdigit():
-                messagebox.showerror("Error", "La cantidad debe ser un número entero válido.")
-                return
-
-            try:
-                nuevo_precio_actual = float(nuevo_precio_actual)
-            except ValueError:
-                messagebox.showerror("Error", "El precio actual debe ser un número válido.")
-                return
-
-            elemento['cantidad'] = int(nueva_cantidad)
-            elemento['precio_actual'] = nuevo_precio_actual
-            elemento['dividendos'] = 'Sí' if var_dividendos_edicion.get() else 'No'
-            elemento['tipo_activo'] = tipo_activo_var_edicion.get()
-            elemento['importe_total'] = elemento['cantidad'] * elemento['precio_actual']
-
-            guardar_cartera(cartera)
-            messagebox.showinfo("Éxito", "Elemento editado correctamente.")
-            ventana_edicion.destroy()
-            actualizar_tabla()
-
-        tk.Button(ventana_edicion, text="Guardar", command=guardar_edicion).grid(row=4, columnspan=2, pady=10)
-
-    def agregar_elemento(tipo_activo):
+    
+    tk.Label(ventana, text="Símbolo:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    entry_simbolo = tk.Entry(ventana, width=15)
+    entry_simbolo.grid(row=0, column=1, padx=5, pady=5)
+    
+    tk.Label(ventana, text="Título:").grid(row=0, column=2, padx=5, pady=5, sticky="e")
+    entry_titulo = tk.Entry(ventana, width=20)
+    entry_titulo.grid(row=0, column=3, padx=5, pady=5)
+    
+    tk.Label(ventana, text="Cantidad:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+    entry_cantidad = tk.Entry(ventana, width=15)
+    entry_cantidad.grid(row=1, column=1, padx=5, pady=5)
+    
+    tk.Label(ventana, text="Precio manual:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
+    entry_precio_manual = tk.Entry(ventana, width=15)
+    entry_precio_manual.grid(row=1, column=3, padx=5, pady=5)
+    
+    tk.Label(ventana, text="Tipo:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+    tipo_activo_var = tk.StringVar()
+    tipo_activo_combobox = tk.OptionMenu(ventana, tipo_activo_var, 'ACC', 'ETF', 'PP', 'FON')
+    tipo_activo_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+    
+    var_dividendos = tk.BooleanVar()
+    tk.Checkbutton(ventana, text="Dividendos", variable=var_dividendos).grid(row=2, column=2, padx=5, pady=5)
+    
+    tk.Label(ventana, text="Broker:").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+    broker_var = tk.StringVar()
+    broker_combobox = tk.OptionMenu(ventana, broker_var, 'ocean', 'degiro', 'cxbank', 'bbva', 'sant')
+    broker_combobox.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+    
+    def agregar_elemento():
         simbolo = entry_simbolo.get().strip()
         titulo = entry_titulo.get().strip()
         cantidad = entry_cantidad.get().strip()
-        tiene_dividendos = var_dividendos.get()
         precio_manual = entry_precio_manual.get().strip()
-
-        # Validar que los campos obligatorios no estén vacíos
-        if not simbolo:
-            messagebox.showerror("Error", "El campo 'Símbolo' no puede estar vacío.")
+        
+        if not simbolo or not titulo or not cantidad.isdigit():
+            messagebox.showerror("Error", "Campos obligatorios incompletos o inválidos.")
             return
-
-        if not titulo:
-            messagebox.showerror("Error", "El campo 'Título' no puede estar vacío.")
-            return
-
-        if not cantidad.isdigit():
-            messagebox.showerror("Error", "El campo 'Cantidad' debe ser un número entero válido.")
-            return
-
+        
         cantidad = int(cantidad)
         precios_actuales = obtener_precios_actuales([simbolo])
         precio_actual = precios_actuales.get(simbolo, 0.0)
-
-        # Validar el precio manual si el precio automático no se encuentra
+        
         if precio_actual == 0.0:
             if not precio_manual:
                 messagebox.showerror("Error", "El precio no se encontró y no se ingresó manualmente.")
@@ -266,19 +98,18 @@ def iniciar_gui():
             except ValueError:
                 messagebox.showerror("Error", "El precio ingresado manualmente no es válido.")
                 return
-
-        importe_total = cantidad * precio_actual
-
+        
         cartera.append({
             'símbolo': simbolo,
             'título': titulo,
             'cantidad': cantidad,
             'precio_actual': precio_actual,
-            'importe_total': importe_total,
-            'dividendos': 'Sí' if tiene_dividendos else 'No',
-            'tipo_activo': tipo_activo
+            'importe_total': cantidad * precio_actual,
+            'dividendos': 'Sí' if var_dividendos.get() else 'No',
+            'tipo_activo': tipo_activo_var.get(),
+            'broker': broker_var.get()
         })
-
+        
         guardar_cartera(cartera)
         messagebox.showinfo("Éxito", "Elemento añadido a la cartera.")
         entry_simbolo.delete(0, tk.END)
@@ -287,76 +118,372 @@ def iniciar_gui():
         entry_precio_manual.delete(0, tk.END)
         var_dividendos.set(False)
         tipo_activo_var.set('')
-        actualizar_tabla()
+        broker_var.set('')
+    
+    boton_agregar = tk.Button(ventana, text="AGREGAR ACTIVO", command=agregar_elemento, 
+                             bg="green", fg="white", font=("Arial", 10, "bold"))
+    boton_agregar.grid(row=4, column=1, columnspan=2, padx=10, pady=20, sticky="ew")
 
+def ventana_ver_cartera():
+    ventana = tk.Toplevel()
+    ventana.title("Ver Cartera")
+    ventana.geometry("1200x800")
+    
+    cartera = cargar_cartera()
+    
+    if not cartera:
+        tk.Label(ventana, text="No hay elementos en la cartera.", font=("Arial", 14)).pack(pady=50)
+        return
+    
+    # Frame con scroll para la tabla
+    frame_scroll = tk.Frame(ventana)
+    frame_scroll.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    canvas = tk.Canvas(frame_scroll)
+    scrollbar = tk.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
+    frame_tabla = tk.Frame(canvas)
+    
+    canvas.create_window((0, 0), window=frame_tabla, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+    
+    # Ordenar cartera
+    cartera_df = pd.DataFrame(cartera)
+    orden_tipos = {'ACC': 0, 'ETF': 1, 'PP': 2, 'FON': 3}
+    cartera_df['orden_tipo'] = cartera_df['tipo_activo'].map(orden_tipos)
+    cartera_df = cartera_df.sort_values(['orden_tipo', 'símbolo']).drop('orden_tipo', axis=1)
+    
+    columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', 'dividendos', 'tipo_activo', 'broker']
+    anchuras = {"símbolo": 10, "título": 25, "cantidad": 8, "precio_actual": 12, "importe_total": 12, "dividendos": 10, "tipo_activo": 8, "broker": 10}
+    
+    # Encabezados
+    for i, columna in enumerate(columnas):
+        anchor = "w" if columna == "título" else "center"
+        tk.Label(frame_tabla, text=columna, borderwidth=1, relief="solid", width=anchuras.get(columna, 15), 
+                bg="yellow", fg="blue", font=("Arial", 12, "bold"), anchor=anchor).grid(row=0, column=i, sticky="ew")
+    
+    tk.Label(frame_tabla, text="Acciones", borderwidth=1, relief="solid", width=15, 
+            bg="yellow", fg="blue", font=("Arial", 12, "bold")).grid(row=0, column=len(columnas), columnspan=2, sticky="ew")
+    
+    def editar_elemento(idx):
+        elemento = cartera[idx]
+        ventana_edicion = tk.Toplevel(ventana)
+        ventana_edicion.title("Editar elemento")
+        
+        tk.Label(ventana_edicion, text="Cantidad:").grid(row=0, column=0, padx=10, pady=5)
+        entry_cantidad = tk.Entry(ventana_edicion)
+        entry_cantidad.insert(0, elemento['cantidad'])
+        entry_cantidad.grid(row=0, column=1, padx=10, pady=5)
+        
+        tk.Label(ventana_edicion, text="Precio actual:").grid(row=1, column=0, padx=10, pady=5)
+        entry_precio = tk.Entry(ventana_edicion)
+        entry_precio.insert(0, elemento['precio_actual'])
+        entry_precio.grid(row=1, column=1, padx=10, pady=5)
+        
+        var_dividendos = tk.BooleanVar(value=elemento['dividendos'] == 'Sí')
+        tk.Checkbutton(ventana_edicion, text="Tiene dividendos", variable=var_dividendos).grid(row=2, columnspan=2, pady=5)
+        
+        tk.Label(ventana_edicion, text="Tipo de activo:").grid(row=3, column=0, padx=10, pady=5)
+        tipo_var = tk.StringVar(value=elemento.get('tipo_activo', ''))
+        tk.OptionMenu(ventana_edicion, tipo_var, 'ACC', 'ETF', 'PP', 'FON').grid(row=3, column=1, padx=10, pady=5)
+        
+        tk.Label(ventana_edicion, text="Broker:").grid(row=4, column=0, padx=10, pady=5)
+        broker_var = tk.StringVar(value=elemento.get('broker', ''))
+        tk.OptionMenu(ventana_edicion, broker_var, 'ocean', 'degiro', 'cxbank', 'bbva', 'sant').grid(row=4, column=1, padx=10, pady=5)
+        
+        def guardar_edicion():
+            if not entry_cantidad.get().isdigit():
+                messagebox.showerror("Error", "La cantidad debe ser un número entero válido.")
+                return
+            try:
+                nuevo_precio = float(entry_precio.get())
+            except ValueError:
+                messagebox.showerror("Error", "El precio debe ser un número válido.")
+                return
+            
+            elemento['cantidad'] = int(entry_cantidad.get())
+            elemento['precio_actual'] = nuevo_precio
+            elemento['dividendos'] = 'Sí' if var_dividendos.get() else 'No'
+            elemento['tipo_activo'] = tipo_var.get()
+            elemento['broker'] = broker_var.get()
+            elemento['importe_total'] = elemento['cantidad'] * elemento['precio_actual']
+            
+            guardar_cartera(cartera)
+            messagebox.showinfo("Éxito", "Elemento editado correctamente.")
+            ventana_edicion.destroy()
+            ventana.destroy()
+            ventana_ver_cartera()
+        
+        tk.Button(ventana_edicion, text="Guardar", command=guardar_edicion).grid(row=5, columnspan=2, pady=10)
+    
+    def eliminar_elemento(idx):
+        if messagebox.askyesno("Confirmar", "¿Está seguro de que desea eliminar este elemento?"):
+            del cartera[idx]
+            guardar_cartera(cartera)
+            messagebox.showinfo("Éxito", "Elemento eliminado.")
+            ventana.destroy()
+            ventana_ver_cartera()
+    
+    # Filas de datos
+    for index, row in cartera_df.iterrows():
+        tipo_activo = row.get('tipo_activo', '')
+        bg_color = {"PP": "#ADD8E6", "FON": "#90EE90", "ETF": "#FFFFE0", "ACC": "#FFDAB9"}.get(tipo_activo, "white")
+        
+        for i, columna in enumerate(columnas):
+            valor = f"{row.get(columna, ''):.2f}" if columna == 'importe_total' else str(row.get(columna, ''))
+            anchor = "w" if columna == "título" else "center"
+            tk.Label(frame_tabla, text=valor, borderwidth=1, relief="solid", width=anchuras.get(columna, 15), 
+                    anchor=anchor, bg=bg_color).grid(row=index + 1, column=i, sticky="ew")
+        
+        # Encontrar índice original en cartera
+        simbolo = row.get('símbolo', '')
+        idx_original = next(i for i, item in enumerate(cartera) if item['símbolo'] == simbolo)
+        
+        tk.Button(frame_tabla, text="Editar", command=lambda idx=idx_original: editar_elemento(idx)).grid(row=index + 1, column=len(columnas), sticky="ew")
+        tk.Button(frame_tabla, text="Eliminar", command=lambda idx=idx_original: eliminar_elemento(idx)).grid(row=index + 1, column=len(columnas) + 1, sticky="ew")
+    
+    frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    
+    # Sumario de totales
+    frame_sumario = tk.Frame(ventana)
+    frame_sumario.pack(fill=tk.X, padx=10, pady=10)
+    
+    # Calcular totales
+    total_general = sum(item['importe_total'] for item in cartera)
+    
+    # Totales por tipo
+    totales_tipo = {}
+    for tipo in ['ACC', 'ETF', 'PP', 'FON']:
+        totales_tipo[tipo] = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == tipo)
+    
+    # Totales por broker
+    totales_broker = {}
+    for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']:
+        totales_broker[broker] = sum(item['importe_total'] for item in cartera if item.get('broker') == broker)
+    
+    # Importe total general (grande)
+    tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", 
+            font=("Arial", 16, "bold"), fg="red").pack(pady=10)
+    
+    # Frame para las dos columnas de totales
+    frame_columnas = tk.Frame(frame_sumario)
+    frame_columnas.pack()
+    
+    # Columna izquierda - Totales por tipo
+    frame_tipos = tk.LabelFrame(frame_columnas, text="Totales por Tipo", font=("Arial", 12, "bold"))
+    frame_tipos.grid(row=0, column=0, padx=20, pady=5, sticky="n")
+    
+    for tipo, total in totales_tipo.items():
+        if total > 0:
+            tk.Label(frame_tipos, text=f"{tipo}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+    
+    # Columna derecha - Totales por broker
+    frame_brokers = tk.LabelFrame(frame_columnas, text="Totales por Broker", font=("Arial", 12, "bold"))
+    frame_brokers.grid(row=0, column=1, padx=20, pady=5, sticky="n")
+    
+    for broker, total in totales_broker.items():
+        if total > 0:
+            tk.Label(frame_brokers, text=f"{broker}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+
+def cargar_dividendos():
+    try:
+        with open("dividendos.json", "r") as archivo:
+            return json.load(archivo)
+    except FileNotFoundError:
+        return {}
+
+def guardar_dividendos(dividendos):
+    with open("dividendos.json", "w") as archivo:
+        json.dump(dividendos, archivo, indent=4)
+
+def ventana_dividendos():
+    ventana = tk.Toplevel()
+    ventana.title("Dividendos")
+    ventana.geometry("1200x800")
+    
+    cartera = cargar_cartera()
+    activos_con_dividendos = [item for item in cartera if item.get('dividendos') == 'Sí']
+    
+    if not activos_con_dividendos:
+        tk.Label(ventana, text="No hay activos con dividendos.", font=("Arial", 14)).pack(pady=50)
+        return
+    
+    dividendos_data = cargar_dividendos()
+    
+    # Notebook para las pestañas de años
+    from tkinter import ttk
+    notebook = ttk.Notebook(ventana)
+    notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+    
+    def crear_tabla_ano(ano):
+        frame_ano = tk.Frame(notebook)
+        notebook.add(frame_ano, text=str(ano))
+        
+        # Frame con scroll
+        canvas = tk.Canvas(frame_ano)
+        scrollbar = tk.Scrollbar(frame_ano, orient="vertical", command=canvas.yview)
+        frame_tabla = tk.Frame(canvas)
+        
+        canvas.create_window((0, 0), window=frame_tabla, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Encabezados
+        tk.Label(frame_tabla, text="Activo", borderwidth=1, relief="solid", width=15, 
+                bg="yellow", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=0)
+        
+        for i, mes in enumerate(meses):
+            tk.Label(frame_tabla, text=mes, borderwidth=1, relief="solid", width=8, 
+                    bg="yellow", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=i+1)
+        
+        tk.Label(frame_tabla, text="Total", borderwidth=1, relief="solid", width=10, 
+                bg="orange", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=13)
+        
+        entries = {}
+        totales_fila = {}
+        totales_mes = [tk.StringVar() for _ in range(12)]
+        total_general = tk.StringVar()
+        
+        def actualizar_totales():
+            # Totales por mes
+            for mes_idx in range(12):
+                total_mes = 0
+                for activo in activos_con_dividendos:
+                    simbolo = activo['símbolo']
+                    try:
+                        valor = float(entries[simbolo][mes_idx].get() or 0)
+                        total_mes += valor
+                    except ValueError:
+                        pass
+                totales_mes[mes_idx].set(f"{total_mes:.2f}")
+            
+            # Totales por fila y general
+            total_gral = 0
+            for activo in activos_con_dividendos:
+                simbolo = activo['símbolo']
+                total_fila = 0
+                for mes_idx in range(12):
+                    try:
+                        valor = float(entries[simbolo][mes_idx].get() or 0)
+                        total_fila += valor
+                    except ValueError:
+                        pass
+                totales_fila[simbolo].set(f"{total_fila:.2f}")
+                total_gral += total_fila
+            
+            total_general.set(f"{total_gral:.2f}")
+            
+            # Guardar datos
+            if str(ano) not in dividendos_data:
+                dividendos_data[str(ano)] = {}
+            for activo in activos_con_dividendos:
+                simbolo = activo['símbolo']
+                dividendos_data[str(ano)][simbolo] = [entry.get() for entry in entries[simbolo]]
+            guardar_dividendos(dividendos_data)
+            actualizar_sumario()
+        
+        # Filas de activos
+        for index, activo in enumerate(activos_con_dividendos):
+            simbolo = activo['símbolo']
+            tk.Label(frame_tabla, text=simbolo, borderwidth=1, relief="solid", width=15, 
+                    anchor="w").grid(row=index+1, column=0)
+            
+            entries[simbolo] = []
+            totales_fila[simbolo] = tk.StringVar()
+            
+            # Campos editables para cada mes
+            for mes_idx in range(12):
+                valor_inicial = ""
+                if str(ano) in dividendos_data and simbolo in dividendos_data[str(ano)]:
+                    if mes_idx < len(dividendos_data[str(ano)][simbolo]):
+                        valor_inicial = dividendos_data[str(ano)][simbolo][mes_idx]
+                
+                entry = tk.Entry(frame_tabla, width=8, justify="center")
+                entry.insert(0, valor_inicial)
+                entry.bind('<KeyRelease>', lambda e: actualizar_totales())
+                entry.grid(row=index+1, column=mes_idx+1, padx=1, pady=1)
+                entries[simbolo].append(entry)
+            
+            # Total de fila (no editable)
+            tk.Label(frame_tabla, textvariable=totales_fila[simbolo], borderwidth=1, relief="solid", 
+                    width=10, anchor="center", bg="lightgray").grid(row=index+1, column=13)
+        
+        # Fila de totales por mes
+        tk.Label(frame_tabla, text="TOTAL", borderwidth=1, relief="solid", width=15, 
+                bg="orange", fg="blue", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=0)
+        
+        for mes_idx in range(12):
+            tk.Label(frame_tabla, textvariable=totales_mes[mes_idx], borderwidth=1, relief="solid", 
+                    width=8, anchor="center", bg="lightgray", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=mes_idx+1)
+        
+        tk.Label(frame_tabla, textvariable=total_general, borderwidth=1, relief="solid", 
+                width=10, anchor="center", bg="orange", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=13)
+        
+        actualizar_totales()
+        frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    
+    # Sumario de totales
+    frame_sumario = tk.Frame(ventana)
+    frame_sumario.pack(fill=tk.X, padx=10, pady=10)
+    
+    totales_anos = {}
+    total_todos_anos = tk.StringVar()
+    
+    def actualizar_sumario():
+        dividendos_data = cargar_dividendos()
+        total_general = 0
+        
+        for ano in [2022, 2023, 2024, 2025]:
+            total_ano = 0
+            if str(ano) in dividendos_data:
+                for simbolo, valores in dividendos_data[str(ano)].items():
+                    for valor in valores:
+                        try:
+                            total_ano += float(valor or 0)
+                        except ValueError:
+                            pass
+            totales_anos[ano].set(f"{ano}: {total_ano:.2f}€")
+            total_general += total_ano
+        
+        total_todos_anos.set(f"TOTAL TODOS LOS AÑOS: {total_general:.2f}€")
+    
+    # Labels para totales por año
+    for ano in [2022, 2023, 2024, 2025]:
+        totales_anos[ano] = tk.StringVar()
+        tk.Label(frame_sumario, textvariable=totales_anos[ano], font=("Arial", 14, "bold")).pack(anchor="w")
+    
+    # Total general
+    tk.Label(frame_sumario, textvariable=total_todos_anos, font=("Arial", 16, "bold"), fg="red").pack(pady=10)
+    
+    # Crear tablas para cada año
+    for ano in [2022, 2023, 2024, 2025]:
+        crear_tabla_ano(ano)
+    
+    actualizar_sumario()
+
+def iniciar_gui():
     root = tk.Tk()
-    root.title("Gestor de Cartera")
-    root.geometry("1200x800")
+    root.title("Gestor de Cartera AAF")
+    root.geometry("400x300")
     
-    # Frame principal con scroll
-    main_frame = tk.Frame(root)
-    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    # Título principal
+    tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=30)
     
-    # Frame para los campos de entrada (siempre visible)
-    entrada_frame = tk.LabelFrame(main_frame, text="Agregar Nuevo Activo", font=("Arial", 12, "bold"))
-    entrada_frame.pack(fill=tk.X, pady=(0, 10))
+    # Botones principales
+    tk.Button(root, text="Añadir Nuevos Activos", command=ventana_agregar_activos, 
+             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=10)
     
-    # Campos de entrada en una cuadrícula más compacta
-    tk.Label(entrada_frame, text="Símbolo:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
-    entry_simbolo = tk.Entry(entrada_frame, width=15)
-    entry_simbolo.grid(row=0, column=1, padx=5, pady=5)
+    tk.Button(root, text="Ver Cartera", command=ventana_ver_cartera, 
+             width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=10)
     
-    tk.Label(entrada_frame, text="Título:").grid(row=0, column=2, padx=5, pady=5, sticky="e")
-    entry_titulo = tk.Entry(entrada_frame, width=20)
-    entry_titulo.grid(row=0, column=3, padx=5, pady=5)
+    tk.Button(root, text="Ver Dividendos", command=ventana_dividendos, 
+             width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
     
-    tk.Label(entrada_frame, text="Cantidad:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
-    entry_cantidad = tk.Entry(entrada_frame, width=15)
-    entry_cantidad.grid(row=1, column=1, padx=5, pady=5)
-    
-    tk.Label(entrada_frame, text="Precio manual:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
-    entry_precio_manual = tk.Entry(entrada_frame, width=15)
-    entry_precio_manual.grid(row=1, column=3, padx=5, pady=5)
-    
-    tk.Label(entrada_frame, text="Tipo:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
-    tipo_activo_var = tk.StringVar()
-    tipo_activo_combobox = tk.OptionMenu(entrada_frame, tipo_activo_var, 'ACC', 'ETF', 'PP', 'FON')
-    tipo_activo_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-    
-    var_dividendos = tk.BooleanVar()
-    tk.Checkbutton(entrada_frame, text="Dividendos", variable=var_dividendos).grid(row=2, column=2, padx=5, pady=5)
-    
-    tk.Button(entrada_frame, text="Agregar", command=lambda: agregar_elemento(tipo_activo_var.get()), 
-              bg="green", fg="white", font=("Arial", 10, "bold")).grid(row=2, column=3, padx=5, pady=5)
-    
-    # Frame para la tabla con scroll
-    tabla_frame = tk.LabelFrame(main_frame, text="Cartera de Inversiones", font=("Arial", 12, "bold"))
-    tabla_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-    
-    # Canvas y scrollbar para la tabla
-    canvas_tabla = tk.Canvas(tabla_frame)
-    scrollbar_v = tk.Scrollbar(tabla_frame, orient="vertical", command=canvas_tabla.yview)
-    scrollbar_h = tk.Scrollbar(tabla_frame, orient="horizontal", command=canvas_tabla.xview)
-    
-    frame_tabla = tk.Frame(canvas_tabla)
-    
-    canvas_tabla.create_window((0, 0), window=frame_tabla, anchor="nw")
-    canvas_tabla.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
-    
-    canvas_tabla.pack(side="left", fill="both", expand=True)
-    scrollbar_v.pack(side="right", fill="y")
-    scrollbar_h.pack(side="bottom", fill="x")
-    
-    def configurar_scroll(event):
-        canvas_tabla.configure(scrollregion=canvas_tabla.bbox("all"))
-    
-    frame_tabla.bind("<Configure>", configurar_scroll)
-    
-    # Frame para totales (siempre visible)
-    totales_frame = tk.LabelFrame(main_frame, text="Resumen", font=("Arial", 12, "bold"))
-    totales_frame.pack(fill=tk.X)
-    
-    actualizar_tabla()
     root.mainloop()
 
 if __name__ == "__main__":
