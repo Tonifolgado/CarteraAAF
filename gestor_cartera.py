@@ -31,7 +31,6 @@ def obtener_precios_actuales(simbolos):
             precios[simbolo] = 0.0
     print("Precios obtenidos.")
     return precios
-
 def mostrar_cartera(df):
     """
     Muestra la cartera en un formato de tabla.
@@ -79,68 +78,66 @@ def iniciar_gui():
             return
 
         cartera_df = pd.DataFrame(cartera)
+        # Ordenar por tipo de activo y luego por símbolo
+        orden_tipos = {'ACC': 0, 'ETF': 1, 'PP': 2, 'FON': 3}
+        cartera_df['orden_tipo'] = cartera_df['tipo_activo'].map(orden_tipos)
+        cartera_df = cartera_df.sort_values(['orden_tipo', 'símbolo']).drop('orden_tipo', axis=1)
         columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', 'dividendos', 'tipo_activo']
-        tipos_disponibles = ['ACC', 'ETF', 'PP', 'FON']
 
         # Crear encabezados de la tabla
-        encabezados = tk.Frame(frame_tabla)
-        encabezados.grid(row=0, column=0, columnspan=len(columnas), sticky="nsew")
         anchuras = {
-            "cantidad": 5,
-            "precio_actual": 10,
+            "símbolo": 10,
+            "título": 25,
+            "cantidad": 8,
+            "precio_actual": 12,
             "importe_total": 12,
-            "dividendos": 4,
-            "tipo_activo": 5
+            "dividendos": 10,
+            "tipo_activo": 8
         }
+        
         for i, columna in enumerate(columnas):
-            anchor = "w" if columna == "título" else "center"  # Alinear título a la izquierda
-            width = anchuras.get(columna, 15)  # Usar anchura especificada o valor por defecto
-            tk.Label(encabezados, text=columna, borderwidth=1, relief="solid", width=width, bg="yellow", fg="blue", font=("Arial", 12, "bold"), anchor=anchor).grid(row=0, column=i, sticky="nsew")
+            anchor = "w" if columna == "título" else "center"
+            width = anchuras.get(columna, 15)
+            tk.Label(frame_tabla, text=columna, borderwidth=1, relief="solid", width=width, 
+                    bg="yellow", fg="blue", font=("Arial", 12, "bold"), anchor=anchor).grid(row=0, column=i, sticky="ew")
 
         # Crear filas de la tabla
         for index, row in cartera_df.iterrows():
-            fila = tk.Frame(frame_tabla)
-            fila.grid(row=index + 1, column=0, columnspan=len(columnas), sticky="nsew")
-
             # Determinar el color de fondo según el tipo de activo
             tipo_activo = row.get('tipo_activo', '')
             if tipo_activo == 'PP':
-                bg_color = "#ADD8E6"  # Azul pálido
+                bg_color = "#ADD8E6"
             elif tipo_activo == 'FON':
-                bg_color = "#90EE90"  # Verde pálido
+                bg_color = "#90EE90"
             elif tipo_activo == 'ETF':
-                bg_color = "#FFFFE0"  # Amarillo
+                bg_color = "#FFFFE0"
             elif tipo_activo == 'ACC':
-                bg_color = "#FFDAB9"  # Naranja pálido
+                bg_color = "#FFDAB9"
             else:
-                bg_color = "white"  # Color por defecto
+                bg_color = "white"
 
             for i, columna in enumerate(columnas):
                 valor = row.get(columna, '')
                 if columna == 'importe_total':
-                    valor = f"{valor:.2f}"  # Formatear importe total con dos decimales
-                anchor = "w" if columna == "título" else "center"  # Alinear título a la izquierda
-                width = anchuras.get(columna, 15)  # Usar anchura especificada o valor por defecto
-                tk.Label(fila, text=str(valor), borderwidth=1, relief="solid", width=width, anchor=anchor, bg=bg_color).grid(row=0, column=i, sticky="nsew")
+                    valor = f"{valor:.2f}"
+                anchor = "w" if columna == "título" else "center"
+                width = anchuras.get(columna, 15)
+                tk.Label(frame_tabla, text=str(valor), borderwidth=1, relief="solid", width=width, 
+                        anchor=anchor, bg=bg_color).grid(row=index + 1, column=i, sticky="ew")
 
-            # Eliminar edición directa de tipo_activo
-            tipo_activo_var = tk.StringVar(value=row.get('tipo_activo', ''))
-            tk.Label(fila, text=tipo_activo_var.get(), borderwidth=1, relief="solid", width=15, anchor="center", bg=bg_color).grid(row=0, column=6, sticky="nsew")
-
-            tk.Button(fila, text="Editar", command=lambda idx=index: editar_elemento(idx)).grid(row=0, column=7, sticky="nsew")
-
-            # Botón para eliminar el elemento
+            # Botones de acción
+            tk.Button(frame_tabla, text="Editar", command=lambda idx=index: editar_elemento(idx)).grid(row=index + 1, column=len(columnas), sticky="ew")
+            
             def eliminar_elemento(idx):
                 del cartera[idx]
                 guardar_cartera(cartera)
                 actualizar_tabla()
 
-            tk.Button(fila, text="Eliminar", command=lambda idx=index: eliminar_elemento(idx)).grid(row=0, column=8, sticky="nsew")
+            tk.Button(frame_tabla, text="Eliminar", command=lambda idx=index: eliminar_elemento(idx)).grid(row=index + 1, column=len(columnas) + 1, sticky="ew")
 
-        # Ajustar el ancho de las columnas al contenido
+        # Configurar el ancho de las columnas
         for i, columna in enumerate(columnas):
-            max_width = max(len(str(row.get(columna, ''))) for row in cartera)
-            frame_tabla.grid_columnconfigure(i, minsize=max_width * 10)  # Multiplicar por un factor para ajustar el ancho visual
+            frame_tabla.grid_columnconfigure(i, weight=0, minsize=anchuras.get(columna, 15) * 8)
 
         # Calcular totales
         total_cantidad_acc = sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == 'ACC')
@@ -294,112 +291,72 @@ def iniciar_gui():
 
     root = tk.Tk()
     root.title("Gestor de Cartera")
-    root.geometry("1024x768")  # Establecer un tamaño inicial más amplio para mostrar más contenido
-    root.update_idletasks()  # Actualizar la ventana para ajustar el contenido
-
-    def ajustar_tamano_ventana(event):
-        canvas_principal.configure(scrollregion=canvas_principal.bbox("all"))
-
-    root.bind("<Configure>", ajustar_tamano_ventana)
-
-    # Configurar el canvas principal para que se expanda con la ventana
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-
-    # Crear un canvas con barra de desplazamiento para la ventana principal
-    canvas_principal = tk.Canvas(root)
-    canvas_principal.grid(row=0, column=0, columnspan=3, sticky="nsew")
-
-    scrollbar_principal = tk.Scrollbar(root, orient="vertical", command=canvas_principal.yview)
-    scrollbar_principal.grid(row=0, column=3, sticky="ns")
-
-    canvas_principal.configure(yscrollcommand=scrollbar_principal.set)
-
-    frame_principal = tk.Frame(canvas_principal)
-    canvas_principal.create_window((0, 0), window=frame_principal, anchor="nw")
-
-    def ajustar_scroll_principal(event):
-        canvas_principal.configure(scrollregion=canvas_principal.bbox("all"))
-
-    frame_principal.bind("<Configure>", ajustar_scroll_principal)
-
-    # Mover los widgets al frame principal
-    tk.Label(frame_principal, text="Símbolo:").grid(row=0, column=0, padx=10, pady=5)
-    entry_simbolo = tk.Entry(frame_principal)
-    entry_simbolo.grid(row=0, column=1, padx=10, pady=5)
-
-    tk.Label(frame_principal, text="Título:").grid(row=1, column=0, padx=10, pady=5)
-    entry_titulo = tk.Entry(frame_principal)
-    entry_titulo.grid(row=1, column=1, padx=10, pady=5)
-
-    tk.Label(frame_principal, text="Cantidad:").grid(row=2, column=0, padx=10, pady=5)
-    entry_cantidad = tk.Entry(frame_principal)
-    entry_cantidad.grid(row=2, column=1, padx=10, pady=5)
-
-    tk.Label(frame_principal, text="Precio manual (opcional):").grid(row=3, column=0, padx=10, pady=5)
-    entry_precio_manual = tk.Entry(frame_principal)
-    entry_precio_manual.grid(row=3, column=1, padx=10, pady=5)
-
-    tk.Label(frame_principal, text="Tipo de activo:").grid(row=4, column=0, padx=10, pady=5)
+    root.geometry("1200x800")
+    
+    # Frame principal con scroll
+    main_frame = tk.Frame(root)
+    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    # Frame para los campos de entrada (siempre visible)
+    entrada_frame = tk.LabelFrame(main_frame, text="Agregar Nuevo Activo", font=("Arial", 12, "bold"))
+    entrada_frame.pack(fill=tk.X, pady=(0, 10))
+    
+    # Campos de entrada en una cuadrícula más compacta
+    tk.Label(entrada_frame, text="Símbolo:").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    entry_simbolo = tk.Entry(entrada_frame, width=15)
+    entry_simbolo.grid(row=0, column=1, padx=5, pady=5)
+    
+    tk.Label(entrada_frame, text="Título:").grid(row=0, column=2, padx=5, pady=5, sticky="e")
+    entry_titulo = tk.Entry(entrada_frame, width=20)
+    entry_titulo.grid(row=0, column=3, padx=5, pady=5)
+    
+    tk.Label(entrada_frame, text="Cantidad:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+    entry_cantidad = tk.Entry(entrada_frame, width=15)
+    entry_cantidad.grid(row=1, column=1, padx=5, pady=5)
+    
+    tk.Label(entrada_frame, text="Precio manual:").grid(row=1, column=2, padx=5, pady=5, sticky="e")
+    entry_precio_manual = tk.Entry(entrada_frame, width=15)
+    entry_precio_manual.grid(row=1, column=3, padx=5, pady=5)
+    
+    tk.Label(entrada_frame, text="Tipo:").grid(row=2, column=0, padx=5, pady=5, sticky="e")
     tipo_activo_var = tk.StringVar()
-    tipo_activo_combobox = tk.OptionMenu(frame_principal, tipo_activo_var, 'ACC', 'ETF', 'PP', 'FON')
-    tipo_activo_combobox.grid(row=4, column=1, padx=10, pady=5)
-
+    tipo_activo_combobox = tk.OptionMenu(entrada_frame, tipo_activo_var, 'ACC', 'ETF', 'PP', 'FON')
+    tipo_activo_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+    
     var_dividendos = tk.BooleanVar()
-    tk.Checkbutton(frame_principal, text="Tiene dividendos", variable=var_dividendos).grid(row=5, columnspan=2, pady=5)
-
-    tk.Button(frame_principal, text="Agregar elemento", command=lambda: agregar_elemento(tipo_activo_var.get())).grid(row=6, column=0, padx=10, pady=10)
-
-    canvas_tabla = tk.Canvas(frame_principal)
-    canvas_tabla.grid(row=7, column=0, columnspan=2, sticky="nsew")
-
-    scrollbar_tabla = tk.Scrollbar(frame_principal, orient="vertical", command=canvas_tabla.yview)
-    scrollbar_tabla.grid(row=7, column=2, sticky="ns")
-
-    canvas_tabla.configure(yscrollcommand=scrollbar_tabla.set)
-
+    tk.Checkbutton(entrada_frame, text="Dividendos", variable=var_dividendos).grid(row=2, column=2, padx=5, pady=5)
+    
+    tk.Button(entrada_frame, text="Agregar", command=lambda: agregar_elemento(tipo_activo_var.get()), 
+              bg="green", fg="white", font=("Arial", 10, "bold")).grid(row=2, column=3, padx=5, pady=5)
+    
+    # Frame para la tabla con scroll
+    tabla_frame = tk.LabelFrame(main_frame, text="Cartera de Inversiones", font=("Arial", 12, "bold"))
+    tabla_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+    
+    # Canvas y scrollbar para la tabla
+    canvas_tabla = tk.Canvas(tabla_frame)
+    scrollbar_v = tk.Scrollbar(tabla_frame, orient="vertical", command=canvas_tabla.yview)
+    scrollbar_h = tk.Scrollbar(tabla_frame, orient="horizontal", command=canvas_tabla.xview)
+    
     frame_tabla = tk.Frame(canvas_tabla)
+    
     canvas_tabla.create_window((0, 0), window=frame_tabla, anchor="nw")
-
-    # Crear barra de desplazamiento horizontal para la tabla
-    scrollbar_horizontal_tabla = tk.Scrollbar(frame_principal, orient="horizontal", command=canvas_tabla.xview)
-    scrollbar_horizontal_tabla.grid(row=8, column=0, columnspan=2, sticky="ew")
-
-    canvas_tabla.configure(xscrollcommand=scrollbar_horizontal_tabla.set)
-
-    def ajustar_scroll_tabla(event):
+    canvas_tabla.configure(yscrollcommand=scrollbar_v.set, xscrollcommand=scrollbar_h.set)
+    
+    canvas_tabla.pack(side="left", fill="both", expand=True)
+    scrollbar_v.pack(side="right", fill="y")
+    scrollbar_h.pack(side="bottom", fill="x")
+    
+    def configurar_scroll(event):
         canvas_tabla.configure(scrollregion=canvas_tabla.bbox("all"))
-
-    frame_tabla.bind("<Configure>", ajustar_scroll_tabla)
-
-    totales_frame = tk.Frame(frame_principal)
-    totales_frame.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
-
+    
+    frame_tabla.bind("<Configure>", configurar_scroll)
+    
+    # Frame para totales (siempre visible)
+    totales_frame = tk.LabelFrame(main_frame, text="Resumen", font=("Arial", 12, "bold"))
+    totales_frame.pack(fill=tk.X)
+    
     actualizar_tabla()
-
-    # Ajustar el tamaño inicial del canvas para que todas las filas sean visibles
-    def ajustar_tamano_inicial():
-        canvas_tabla.update_idletasks()
-        ancho_total = sum(widget.winfo_width() for widget in frame_tabla.winfo_children())
-        alto_total = frame_tabla.winfo_height()
-        canvas_tabla.configure(width=ancho_total, height=alto_total)
-
-    ajustar_tamano_inicial()
-
-    # Asegurar que los valores totales sean visibles
-    totales_frame.grid(row=10, column=0, columnspan=2, padx=10, pady=10)
-
-    # Asegurar que los campos de entrada sean visibles
-    frame_principal.grid_rowconfigure(0, weight=0)
-    frame_principal.grid_rowconfigure(1, weight=0)
-    frame_principal.grid_rowconfigure(2, weight=0)
-    frame_principal.grid_rowconfigure(3, weight=0)
-    frame_principal.grid_rowconfigure(4, weight=0)
-    frame_principal.grid_rowconfigure(5, weight=0)
-
-    # Asegurar que el resumen sea visible
-    totales_frame.grid(row=11, column=0, columnspan=2, padx=10, pady=10)
-
     root.mainloop()
 
 if __name__ == "__main__":

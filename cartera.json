@@ -29,9 +29,9 @@
     {
         "s\u00edmbolo": "HDLV.DE",
         "t\u00edtulo": "INVS&P500HiDivLowVltyUCITSETFD (XETR:HDLV)",
-        "cantidad": 45,
+        "cantidad": 50,
         "precio_actual": 30.66,
-        "importe_total": 1379.7,
+        "importe_total": 1533.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ETF"
     },
@@ -74,9 +74,9 @@
     {
         "s\u00edmbolo": "LOG",
         "t\u00edtulo": "Logista Integral SA (BMEX:LOG)",
-        "cantidad": 35,
+        "cantidad": 40,
         "precio_actual": 27.64,
-        "importe_total": 967.4,
+        "importe_total": 1105.6,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC"
     },
@@ -92,9 +92,9 @@
     {
         "s\u00edmbolo": "IBE",
         "t\u00edtulo": "Iberdrola SA (BMEX:IBE)",
-        "cantidad": 40,
+        "cantidad": 41,
         "precio_actual": 15.27,
-        "importe_total": 610.8,
+        "importe_total": 626.0699999999999,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC"
     },
@@ -128,9 +128,9 @@
     {
         "s\u00edmbolo": "KHNZ",
         "t\u00edtulo": "THE KRAFT HEINZ COMPANY (XETR:KHNZ)",
-        "cantidad": 15,
+        "cantidad": 20,
         "precio_actual": 23.75,
-        "importe_total": 356.25,
+        "importe_total": 475.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC"
     },
@@ -200,9 +200,18 @@
     {
         "s\u00edmbolo": "PFE",
         "t\u00edtulo": "PFIZER INC. (XNYS:PFE)",
-        "cantidad": 10,
+        "cantidad": 15,
         "precio_actual": 23.49,
-        "importe_total": 234.89999999999998,
+        "importe_total": 352.34999999999997,
+        "dividendos": "S\u00ed",
+        "tipo_activo": "ACC"
+    },
+    {
+        "s\u00edmbolo": "ENG",
+        "t\u00edtulo": "Enagas",
+        "cantidad": 40,
+        "precio_actual": 13.13,
+        "importe_total": 525.2,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC"
     }
