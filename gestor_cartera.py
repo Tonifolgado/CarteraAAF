@@ -129,13 +129,8 @@ def ventana_agregar_activos():
 def ventana_ver_cartera():
     ventana = tk.Toplevel()
     ventana.title("Ver Cartera")
-
-    # Calcular anchura dinámica de la tabla
-    anchuras = {"símbolo": 10, "título": 25, "cantidad": 8, "precio_actual": 12, "importe_total": 12, "% Activo": 10, "tipo_activo": 8, "broker": 10}
-    columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', '% Activo', 'tipo_activo', 'broker']
-    ancho_total = sum(anchuras.get(col, 15) for col in columnas) * 9 + 2 * 15 * 9  # 9px por carácter aprox + botones
-    ancho_total += 120  # margen medio
-    ventana.geometry(f"{ancho_total}x900")
+    # Establecer un tamaño inicial, la ventana será desplazable
+    ventana.geometry("1200x800")
     
     cartera = cargar_cartera()
     
@@ -143,7 +138,7 @@ def ventana_ver_cartera():
         tk.Label(ventana, text="No hay elementos en la cartera.", font=("Arial", 14)).pack(pady=50)
         return
     
-    # Calcular totales de importes y cantidades para los paneles y el gráfico
+    # --- 1. Realizar todos los cálculos primero ---
     total_general = sum(item['importe_total'] for item in cartera)
     totales_tipo = {tipo: sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == tipo) for tipo in ['ACC', 'ETF', 'PP', 'FON']}
     totales_broker = {broker: sum(item['importe_total'] for item in cartera if item.get('broker') == broker) for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']}
@@ -151,116 +146,33 @@ def ventana_ver_cartera():
     totales_tipo_cant = {tipo: sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == tipo) for tipo in ['ACC', 'ETF', 'PP', 'FON']}
     totales_broker_cant = {broker: sum(item['cantidad'] for item in cartera if item.get('broker') == broker) for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']}
 
-    # Frame con scroll para la tabla (arriba)
-    frame_scroll = tk.Frame(ventana)
-    frame_scroll.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-    canvas = tk.Canvas(frame_scroll)
-    scrollbar = tk.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
-    frame_tabla = tk.Frame(canvas)
-
-    canvas.create_window((0, 0), window=frame_tabla, anchor="nw")
-    canvas.configure(yscrollcommand=scrollbar.set)
-
-    canvas.pack(side="left", fill="both", expand=True)
-    scrollbar.pack(side="right", fill="y")
-
-    # Panel de sumarios (debajo de la tabla)
-    frame_sumarios = tk.Frame(ventana)
-    frame_sumarios.pack(fill=tk.X, padx=10, pady=10)
-
-    # Panel de importes (izquierda)
-    frame_sumario = tk.Frame(frame_sumarios)
-    frame_sumario.pack(side="left", fill=tk.Y, expand=False)
-    tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", font=("Arial", 16, "bold"), fg="red").pack(pady=10)
-    frame_columnas = tk.Frame(frame_sumario)
-    frame_columnas.pack()
-    frame_tipos = tk.LabelFrame(frame_columnas, text="Totales por Tipo", font=("Arial", 12, "bold"))
-    frame_tipos.grid(row=0, column=0, padx=20, pady=5, sticky="n")
-    for tipo, total in totales_tipo.items():
-        if total > 0:
-            tk.Label(frame_tipos, text=f"{tipo}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
-    frame_brokers = tk.LabelFrame(frame_columnas, text="Totales por Broker", font=("Arial", 12, "bold"))
-    frame_brokers.grid(row=0, column=1, padx=20, pady=5, sticky="n")
-    for broker, total in totales_broker.items():
-        if total > 0:
-            tk.Label(frame_brokers, text=f"{broker}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
-
-    # Panel de cantidades (derecha)
-    frame_sumario_cant = tk.Frame(frame_sumarios)
-    frame_sumario_cant.pack(side="left", fill=tk.Y, expand=False, padx=40)
-    tk.Label(frame_sumario_cant, text=f"TOTAL ACCIONES: {total_acciones}", font=("Arial", 16, "bold"), fg="blue").pack(pady=10)
-    frame_columnas_cant = tk.Frame(frame_sumario_cant)
-    frame_columnas_cant.pack()
-    frame_tipos_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Tipo", font=("Arial", 12, "bold"))
-    frame_tipos_cant.grid(row=0, column=0, padx=20, pady=5, sticky="n")
-    for tipo, total in totales_tipo_cant.items():
-        if total > 0:
-            tk.Label(frame_tipos_cant, text=f"{tipo}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
-    frame_brokers_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Broker", font=("Arial", 12, "bold"))
-    frame_brokers_cant.grid(row=0, column=1, padx=20, pady=5, sticky="n")
-    for broker, total in totales_broker_cant.items():
-        if total > 0:
-            tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
-
-    # Gráfico de barras (debajo de los paneles, alineado a la izquierda)
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    tipos = ['ACC', 'ETF', 'PP', 'FON']
-    totales_tipo_graf = [totales_tipo[tipo] for tipo in tipos]
-    colores = ['#FFDAB9', '#FFFFE0', '#ADD8E6', '#90EE90']
-    fig, ax = plt.subplots(figsize=(5, 2.2))
-    bars = ax.bar(tipos, totales_tipo_graf, color=colores)
-    ax.set_ylabel('Importe (€)')
-    ax.set_title('Importe por Tipo de Activo')
-    ax.bar_label(bars, fmt='%.0f€')
-    fig.tight_layout()
-    frame_grafico = tk.Frame(ventana)
-    frame_grafico.pack(fill=tk.X, padx=10, pady=(0, 10), anchor="w")
-    canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
-    canvas_graf.draw()
-    canvas_graf.get_tk_widget().pack(side=tk.LEFT, anchor="w")
-    
-    # Ordenar cartera
+    # Ordenar cartera para la visualización
     cartera_df = pd.DataFrame(cartera)
     orden_tipos = {'ACC': 0, 'ETF': 1, 'PP': 2, 'FON': 3}
     cartera_df['orden_tipo'] = cartera_df['tipo_activo'].map(orden_tipos)
     cartera_df = cartera_df.sort_values(['orden_tipo', 'símbolo']).drop('orden_tipo', axis=1)
-    
     total_general_calculado = cartera_df['importe_total'].sum()
 
-    columnas_map = {
-        'símbolo': 'SIMBOLO',
-        'título': 'TITULO',
-        'cantidad': 'CANTIDAD',
-        'precio_actual': 'PRECIO',
-        'importe_total': 'IMPORTE',
-        '% Activo': '%',
-        'tipo_activo': 'TIPO',
-        'broker': 'BROKER'
-    }
-    # ...el gráfico debe ir después de los paneles de sumario...
-    # --- Gráfico de barras de importes por tipo de activo ---
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    # --- 2. Configurar el área de scroll principal para toda la ventana ---
+    main_canvas = tk.Canvas(ventana)
+    scrollbar = tk.Scrollbar(ventana, orient="vertical", command=main_canvas.yview)
+    content_frame = tk.Frame(main_canvas) # Frame que contendrá todo
 
-    tipos = ['ACC', 'ETF', 'PP', 'FON']
-    totales_tipo_graf = [totales_tipo[tipo] for tipo in tipos]
-    colores = ['#FFDAB9', '#FFFFE0', '#ADD8E6', '#90EE90']
+    content_frame.bind("<Configure>", lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all")))
+    main_canvas.create_window((0, 0), window=content_frame, anchor="nw")
+    main_canvas.configure(yscrollcommand=scrollbar.set)
 
-    fig, ax = plt.subplots(figsize=(5, 2.2))
-    bars = ax.bar(tipos, totales_tipo_graf, color=colores)
-    ax.set_ylabel('Importe (€)')
-    ax.set_title('Importe por Tipo de Activo')
-    ax.bar_label(bars, fmt='%.0f€')
-    fig.tight_layout()
+    main_canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
 
-    frame_grafico = tk.Frame(ventana)
-    frame_grafico.pack(fill=tk.X, padx=10, pady=(0, 10))
-    canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
-    canvas_graf.draw()
-    canvas_graf.get_tk_widget().pack(side=tk.LEFT, anchor="w")
-    
+    # --- 3. Crear y poblar la tabla de activos ---
+    frame_tabla = tk.Frame(content_frame)
+    frame_tabla.pack(pady=10, padx=10, anchor="n")
+
+    anchuras = {"símbolo": 10, "título": 35, "cantidad": 8, "precio_actual": 12, "importe_total": 12, "% Activo": 10, "tipo_activo": 8, "broker": 10}
+    columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', '% Activo', 'tipo_activo', 'broker']
+    columnas_map = {'símbolo': 'SÍMBOLO', 'título': 'TÍTULO', 'cantidad': 'CANTIDAD', 'precio_actual': 'PRECIO', 'importe_total': 'IMPORTE', '% Activo': '%', 'tipo_activo': 'TIPO', 'broker': 'BROKER'}
+
     # Encabezados
     for i, columna in enumerate(columnas):
         anchor = "w" if columna == "título" else "center"
@@ -346,81 +258,67 @@ def ventana_ver_cartera():
         
         # Encontrar índice original en cartera
         simbolo = row.get('símbolo', '')
-        idx_original = next(i for i, item in enumerate(cartera) if item['símbolo'] == simbolo)
+        idx_original = next((i for i, item in enumerate(cartera) if item['símbolo'] == simbolo), None)
         
         tk.Button(frame_tabla, text="Editar", command=lambda idx=idx_original: editar_elemento(idx)).grid(row=index + 1, column=len(columnas), sticky="ew")
         tk.Button(frame_tabla, text="Eliminar", command=lambda idx=idx_original: eliminar_elemento(idx)).grid(row=index + 1, column=len(columnas) + 1, sticky="ew")
     
-    frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-    
     # Panel de sumarios (importes y cantidades)
-    frame_sumarios = tk.Frame(ventana)
-    frame_sumarios.pack(fill=tk.X, padx=10, pady=10)
+    frame_sumarios = tk.Frame(content_frame)
+    frame_sumarios.pack(pady=20, padx=10, anchor="n", fill=tk.X, expand=True)
 
-    # --- Panel de importes (izquierda) ---
+    # --- 4. Paneles de sumario ---
+    # Panel de importes (izquierda)
     frame_sumario = tk.Frame(frame_sumarios)
-    frame_sumario.pack(side="left", fill=tk.Y, expand=False)
-
-    # Calcular totales de importes
-    total_general = sum(item['importe_total'] for item in cartera)
-
-    # Totales por tipo (importe)
-    totales_tipo = {}
-    for tipo in ['ACC', 'ETF', 'PP', 'FON']:
-        totales_tipo[tipo] = sum(item['importe_total'] for item in cartera if item.get('tipo_activo') == tipo)
-
-    # Totales por broker (importe)
-    totales_broker = {}
-    for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']:
-        totales_broker[broker] = sum(item['importe_total'] for item in cartera if item.get('broker') == broker)
-    
-    # Suma de cantidades por tipo
-    cantidad_por_tipo = {}
-    for tipo in ['ACC', 'ETF', 'PP', 'FON']:
-        cantidad_por_tipo[tipo] = sum(item.get('cantidad', 0) for item in cartera if item.get('tipo_activo') == tipo)
-
-    # Suma de cantidades por broker
-    cantidad_por_broker = {}
-    for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']:
-        cantidad_por_broker[broker] = sum(item.get('cantidad', 0) for item in cartera if item.get('broker') == broker)
-
-    # Importe total general (grande)
-    tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", 
-            font=("Arial", 16, "bold"), fg="red").pack(pady=10)
-    
-    # Frame para las columnas de totales
+    frame_sumario.pack(side="left", fill=tk.Y, expand=True, anchor="n")
+    tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", font=("Arial", 16, "bold"), fg="red").pack(pady=10)
     frame_columnas = tk.Frame(frame_sumario)
     frame_columnas.pack()
-
-    # Columna izquierda - Totales por tipo (importe)
     frame_tipos = tk.LabelFrame(frame_columnas, text="Totales por Tipo", font=("Arial", 12, "bold"))
     frame_tipos.grid(row=0, column=0, padx=10, pady=5, sticky="n")
-    
     for tipo, total in totales_tipo.items():
         if total > 0:
             tk.Label(frame_tipos, text=f"{tipo}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
-
-    # Columna derecha - Totales por broker (importe)
     frame_brokers = tk.LabelFrame(frame_columnas, text="Totales por Broker", font=("Arial", 12, "bold"))
     frame_brokers.grid(row=0, column=1, padx=10, pady=5, sticky="n")
-    
     for broker, total in totales_broker.items():
         if total > 0:
             tk.Label(frame_brokers, text=f"{broker}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
-    # Panel de activos por tipo
-    frame_conteo_tipos = tk.LabelFrame(frame_columnas, text="Activos por Tipo", font=("Arial", 12, "bold"))
-    frame_conteo_tipos.grid(row=0, column=2, padx=10, pady=5, sticky="n")
-    for tipo, cantidad in cantidad_por_tipo.items():
-        if cantidad > 0:
-            tk.Label(frame_conteo_tipos, text=f"{tipo}: {cantidad}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+    # Panel de cantidades (derecha)
+    frame_sumario_cant = tk.Frame(frame_sumarios)
+    frame_sumario_cant.pack(side="left", fill=tk.Y, expand=True, padx=40, anchor="n")
+    tk.Label(frame_sumario_cant, text=f"TOTAL ACCIONES: {total_acciones}", font=("Arial", 16, "bold"), fg="blue").pack(pady=10)
+    frame_columnas_cant = tk.Frame(frame_sumario_cant)
+    frame_columnas_cant.pack()
+    frame_tipos_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Tipo", font=("Arial", 12, "bold"))
+    frame_tipos_cant.grid(row=0, column=0, padx=10, pady=5, sticky="n")
+    for tipo, total in totales_tipo_cant.items():
+        if total > 0:
+            tk.Label(frame_tipos_cant, text=f"{tipo}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+    frame_brokers_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Broker", font=("Arial", 12, "bold"))
+    frame_brokers_cant.grid(row=0, column=1, padx=10, pady=5, sticky="n")
+    for broker, total in totales_broker_cant.items():
+        if total > 0:
+            tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
-    # Panel de activos por broker
-    frame_conteo_brokers = tk.LabelFrame(frame_columnas, text="Activos por Broker", font=("Arial", 12, "bold"))
-    frame_conteo_brokers.grid(row=0, column=3, padx=10, pady=5, sticky="n")
-    for broker, cantidad in cantidad_por_broker.items():
-        if cantidad > 0:
-            tk.Label(frame_conteo_brokers, text=f"{broker}: {cantidad}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+    # --- 5. Gráfico de sectores ---
+    frame_grafico = tk.Frame(content_frame)
+    frame_grafico.pack(pady=20, padx=10, anchor="n")
+
+    labels_graf = [tipo for tipo, total in totales_tipo.items() if total > 0]
+    valores_graf = [total for total in totales_tipo.values() if total > 0]
+    colores = ['#FFDAB9', '#FFFFE0', '#ADD8E6', '#90EE90'] # Mismos colores que la tabla
+
+    if valores_graf:
+        fig, ax = plt.subplots(figsize=(7, 5))
+        ax.pie(valores_graf, labels=labels_graf, autopct='%1.1f%%', startangle=140, colors=colores)
+        ax.axis('equal')  # Para asegurar que el gráfico sea un círculo.
+        ax.set_title('Distribución por Tipo de Activo', fontsize=14, fontweight='bold')
+        
+        canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
+        canvas_graf.draw()
+        canvas_graf.get_tk_widget().pack()
 
 def cargar_dividendos():
     try:
@@ -447,11 +345,71 @@ def ventana_dividendos():
     
     dividendos_data = cargar_dividendos()
     
-    # Notebook para las pestañas de años
+    # Notebook para las pestañas de años y resumen
     from tkinter import ttk
     notebook = ttk.Notebook(ventana)
     notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    # --- Pestaña de Resumen ---
+    frame_resumen_tab = ttk.Frame(notebook)
+    notebook.add(frame_resumen_tab, text="Resumen")
     
+    frame_resumen = tk.LabelFrame(frame_resumen_tab, text="Resumen de Dividendos Totales", font=("Arial", 14, "bold"), padx=10, pady=10)
+    frame_resumen.pack(fill=tk.X, padx=10, pady=10, anchor="n")
+    anos = [2022, 2023, 2024, 2025]
+    
+    # Calcular todos los totales necesarios para la tabla de resumen
+    totales_por_activo_ano = {activo['símbolo']: {ano: 0 for ano in anos} for activo in activos_con_dividendos}
+    totales_por_ano = {ano: 0 for ano in anos}
+    
+    for ano_str, data_ano in dividendos_data.items():
+        try:
+            ano = int(ano_str)
+            if ano in anos:
+                for simbolo, valores in data_ano.items():
+                    if simbolo in totales_por_activo_ano:
+                        total_activo_ano = sum(float(v or 0) for v in valores)
+                        totales_por_activo_ano[simbolo][ano] = total_activo_ano
+                        totales_por_ano[ano] += total_activo_ano
+        except (ValueError, TypeError):
+            continue # Ignorar años o datos mal formados
+
+    totales_por_activo = {simbolo: sum(totales_anuales.values()) for simbolo, totales_anuales in totales_por_activo_ano.items()}
+    gran_total = sum(totales_por_ano.values())
+
+    # Encabezados de la tabla de resumen
+    headers = ["Activo"] + [str(ano) for ano in anos] + ["Total Activo", "% Total"]
+    header_font = ("Arial", 11, "bold")
+    for i, header in enumerate(headers):
+        tk.Label(frame_resumen, text=header, font=header_font, bg="lightblue", relief="solid", borderwidth=1, padx=5, pady=2).grid(row=0, column=i, sticky="ew")
+
+    # Filas de datos para cada activo
+    row_idx = 1
+    for activo in sorted(activos_con_dividendos, key=lambda x: x['símbolo']):
+        simbolo = activo['símbolo']
+        tk.Label(frame_resumen, text=simbolo, anchor="w", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=0, sticky="ew")
+        
+        for i, ano in enumerate(anos):
+            valor = totales_por_activo_ano.get(simbolo, {}).get(ano, 0)
+            tk.Label(frame_resumen, text=f"{valor:.2f}€", anchor="e", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=i+1, sticky="ew")
+            
+        total_activo = totales_por_activo.get(simbolo, 0)
+        tk.Label(frame_resumen, text=f"{total_activo:.2f}€", anchor="e", relief="solid", borderwidth=1, bg="lightgray", font=("Arial", 10, "bold"), padx=5).grid(row=row_idx, column=len(anos)+1, sticky="ew")
+        
+        porcentaje = (total_activo / gran_total * 100) if gran_total > 0 else 0
+        tk.Label(frame_resumen, text=f"{porcentaje:.2f}%", anchor="e", relief="solid", borderwidth=1, bg="lightgray", font=("Arial", 10, "bold"), padx=5).grid(row=row_idx, column=len(anos)+2, sticky="ew")
+        
+        row_idx += 1
+
+    # Fila de totales por año
+    tk.Label(frame_resumen, text="TOTAL AÑO", font=header_font, bg="orange", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=0, sticky="ew")
+    for i, ano in enumerate(anos):
+        tk.Label(frame_resumen, text=f"{totales_por_ano[ano]:.2f}€", font=header_font, anchor="e", bg="orange", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=i+1, sticky="ew")
+    
+    tk.Label(frame_resumen, text=f"{gran_total:.2f}€", font=header_font, anchor="e", bg="red", fg="white", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=len(anos)+1, sticky="ew")
+    tk.Label(frame_resumen, text="100.00%", font=header_font, anchor="e", bg="red", fg="white", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=len(anos)+2, sticky="ew")
+
+    # --- Pestañas de Años ---
     meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     
     def crear_tabla_ano(ano):
@@ -470,14 +428,14 @@ def ventana_dividendos():
         
         # Encabezados
         tk.Label(frame_tabla, text="Activo", borderwidth=1, relief="solid", width=15, 
-                bg="yellow", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=0)
+                bg="yellow", fg="blue", font=("Arial", 12, "bold")).grid(row=0, column=0)
         
         for i, mes in enumerate(meses):
             tk.Label(frame_tabla, text=mes, borderwidth=1, relief="solid", width=8, 
-                    bg="yellow", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=i+1)
+                    bg="yellow", fg="blue", font=("Arial", 12, "bold")).grid(row=0, column=i+1)
         
         tk.Label(frame_tabla, text="Total", borderwidth=1, relief="solid", width=10, 
-                bg="orange", fg="blue", font=("Arial", 10, "bold")).grid(row=0, column=13)
+                bg="orange", fg="blue", font=("Arial", 12, "bold")).grid(row=0, column=13)
         
         entries = {}
         totales_fila = {}
@@ -485,18 +443,6 @@ def ventana_dividendos():
         total_general = tk.StringVar()
         
         def actualizar_totales():
-            # Totales por mes
-            for mes_idx in range(12):
-                total_mes = 0
-                for activo in activos_con_dividendos:
-                    simbolo = activo['símbolo']
-                    try:
-                        valor = float(entries[simbolo][mes_idx].get() or 0)
-                        total_mes += valor
-                    except ValueError:
-                        pass
-                totales_mes[mes_idx].set(f"{total_mes:.2f}")
-            
             # Totales por fila y general
             total_gral = 0
             for activo in activos_con_dividendos:
@@ -511,6 +457,24 @@ def ventana_dividendos():
                 totales_fila[simbolo].set(f"{total_fila:.2f}")
                 total_gral += total_fila
             
+            # Totales por mes y color de celdas
+            for mes_idx in range(12):
+                total_mes = 0
+                for activo in activos_con_dividendos:
+                    simbolo = activo['símbolo']
+                    entry = entries[simbolo][mes_idx]
+                    try:
+                        valor = float(entry.get() or 0)
+                        total_mes += valor
+                        # Cambiar color de fondo si hay valor
+                        if valor > 0:
+                            entry.config(bg="#90EE90") # Verde claro
+                        else:
+                            entry.config(bg="white")
+                    except ValueError:
+                        entry.config(bg="white") # Blanco si no es un número
+                totales_mes[mes_idx].set(f"{total_mes:.2f}")
+            
             total_general.set(f"{total_gral:.2f}")
             
             # Guardar datos
@@ -520,7 +484,6 @@ def ventana_dividendos():
                 simbolo = activo['símbolo']
                 dividendos_data[str(ano)][simbolo] = [entry.get() for entry in entries[simbolo]]
             guardar_dividendos(dividendos_data)
-            actualizar_sumario()
         
         # Filas de activos
         for index, activo in enumerate(activos_con_dividendos):
@@ -550,56 +513,21 @@ def ventana_dividendos():
         
         # Fila de totales por mes
         tk.Label(frame_tabla, text="TOTAL", borderwidth=1, relief="solid", width=15, 
-                bg="orange", fg="blue", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=0)
+                bg="orange", fg="blue", font=("Arial", 12, "bold")).grid(row=len(activos_con_dividendos)+1, column=0)
         
         for mes_idx in range(12):
             tk.Label(frame_tabla, textvariable=totales_mes[mes_idx], borderwidth=1, relief="solid", 
-                    width=8, anchor="center", bg="lightgray", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=mes_idx+1)
+                    width=8, anchor="center", bg="lightgray", font=("Arial", 12, "bold")).grid(row=len(activos_con_dividendos)+1, column=mes_idx+1)
         
         tk.Label(frame_tabla, textvariable=total_general, borderwidth=1, relief="solid", 
-                width=10, anchor="center", bg="orange", font=("Arial", 10, "bold")).grid(row=len(activos_con_dividendos)+1, column=13)
+                width=10, anchor="center", bg="orange", font=("Arial", 12, "bold")).grid(row=len(activos_con_dividendos)+1, column=13)
         
         actualizar_totales()
         frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
     
-    # Sumario de totales
-    frame_sumario = tk.Frame(ventana)
-    frame_sumario.pack(fill=tk.X, padx=10, pady=10)
-    
-    totales_anos = {}
-    total_todos_anos = tk.StringVar()
-    
-    def actualizar_sumario():
-        dividendos_data = cargar_dividendos()
-        total_general = 0
-        
-        for ano in [2022, 2023, 2024, 2025]:
-            total_ano = 0
-            if str(ano) in dividendos_data:
-                for simbolo, valores in dividendos_data[str(ano)].items():
-                    for valor in valores:
-                        try:
-                            total_ano += float(valor or 0)
-                        except ValueError:
-                            pass
-            totales_anos[ano].set(f"{ano}: {total_ano:.2f}€")
-            total_general += total_ano
-        
-        total_todos_anos.set(f"TOTAL TODOS LOS AÑOS: {total_general:.2f}€")
-    
-    # Labels para totales por año
-    for ano in [2022, 2023, 2024, 2025]:
-        totales_anos[ano] = tk.StringVar()
-        tk.Label(frame_sumario, textvariable=totales_anos[ano], font=("Arial", 14, "bold")).pack(anchor="w")
-    
-    # Total general
-    tk.Label(frame_sumario, textvariable=total_todos_anos, font=("Arial", 16, "bold"), fg="red").pack(pady=10)
-    
     # Crear tablas para cada año
     for ano in [2022, 2023, 2024, 2025]:
         crear_tabla_ano(ano)
-    
-    actualizar_sumario()
 
 def iniciar_gui():
     root = tk.Tk()
