@@ -263,17 +263,27 @@ def ventana_ver_cartera():
     for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']:
         totales_broker[broker] = sum(item['importe_total'] for item in cartera if item.get('broker') == broker)
     
+    # Suma de cantidades por tipo
+    cantidad_por_tipo = {}
+    for tipo in ['ACC', 'ETF', 'PP', 'FON']:
+        cantidad_por_tipo[tipo] = sum(item.get('cantidad', 0) for item in cartera if item.get('tipo_activo') == tipo)
+
+    # Suma de cantidades por broker
+    cantidad_por_broker = {}
+    for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']:
+        cantidad_por_broker[broker] = sum(item.get('cantidad', 0) for item in cartera if item.get('broker') == broker)
+
     # Importe total general (grande)
     tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", 
             font=("Arial", 16, "bold"), fg="red").pack(pady=10)
     
-    # Frame para las dos columnas de totales
+    # Frame para las columnas de totales
     frame_columnas = tk.Frame(frame_sumario)
     frame_columnas.pack()
     
     # Columna izquierda - Totales por tipo
     frame_tipos = tk.LabelFrame(frame_columnas, text="Totales por Tipo", font=("Arial", 12, "bold"))
-    frame_tipos.grid(row=0, column=0, padx=20, pady=5, sticky="n")
+    frame_tipos.grid(row=0, column=0, padx=10, pady=5, sticky="n")
     
     for tipo, total in totales_tipo.items():
         if total > 0:
@@ -281,11 +291,25 @@ def ventana_ver_cartera():
     
     # Columna derecha - Totales por broker
     frame_brokers = tk.LabelFrame(frame_columnas, text="Totales por Broker", font=("Arial", 12, "bold"))
-    frame_brokers.grid(row=0, column=1, padx=20, pady=5, sticky="n")
+    frame_brokers.grid(row=0, column=1, padx=10, pady=5, sticky="n")
     
     for broker, total in totales_broker.items():
         if total > 0:
             tk.Label(frame_brokers, text=f"{broker}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+
+    # Panel de activos por tipo
+    frame_conteo_tipos = tk.LabelFrame(frame_columnas, text="Activos por Tipo", font=("Arial", 12, "bold"))
+    frame_conteo_tipos.grid(row=0, column=2, padx=10, pady=5, sticky="n")
+    for tipo, cantidad in cantidad_por_tipo.items():
+        if cantidad > 0:
+            tk.Label(frame_conteo_tipos, text=f"{tipo}: {cantidad}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
+
+    # Panel de activos por broker
+    frame_conteo_brokers = tk.LabelFrame(frame_columnas, text="Activos por Broker", font=("Arial", 12, "bold"))
+    frame_conteo_brokers.grid(row=0, column=3, padx=10, pady=5, sticky="n")
+    for broker, cantidad in cantidad_por_broker.items():
+        if cantidad > 0:
+            tk.Label(frame_conteo_brokers, text=f"{broker}: {cantidad}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
 def cargar_dividendos():
     try:
