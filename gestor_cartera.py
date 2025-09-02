@@ -1,13 +1,14 @@
 import pandas as pd
 import yfinance as yf
-from tabulate import tabulate
 import tkinter as tk
 from tkinter import messagebox
-import json
+import json 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import ttk
 
-CARPETA_ARCHIVO = "cartera.json"
+CARTERA_ARCHIVO = "cartera.json"
+DIVIDENDOS_ARCHIVO = "dividendos.json"
 
 def obtener_precios_actuales(simbolos):
     print("Obteniendo precios de mercado actuales...")
@@ -30,7 +31,7 @@ def obtener_precios_actuales(simbolos):
 
 def cargar_cartera():
     try:
-        with open(CARPETA_ARCHIVO, "r") as archivo:
+        with open(CARTERA_ARCHIVO, "r") as archivo:
             return json.load(archivo)
     except FileNotFoundError:
         return []
@@ -38,7 +39,7 @@ def cargar_cartera():
         return []
 
 def guardar_cartera(cartera):
-    with open(CARPETA_ARCHIVO, "w") as archivo:
+    with open(CARTERA_ARCHIVO, "w") as archivo:
         json.dump(cartera, archivo, indent=4)
 
 def ventana_agregar_activos():
@@ -146,33 +147,60 @@ def ventana_ver_cartera():
     totales_tipo_cant = {tipo: sum(item['cantidad'] for item in cartera if item.get('tipo_activo') == tipo) for tipo in ['ACC', 'ETF', 'PP', 'FON']}
     totales_broker_cant = {broker: sum(item['cantidad'] for item in cartera if item.get('broker') == broker) for broker in ['sant', 'cxbank', 'bbva', 'degiro', 'ocean']}
 
-    # Ordenar cartera para la visualización
+    # --- Variables que faltaban en la función ---
+    columnas = [
+        'símbolo',
+        'título',
+        'cantidad',
+        'precio_actual',
+        'importe_total',
+        '% Activo',
+        'tipo_activo',
+        'broker'
+    ]
+    anchuras = {
+        'símbolo': 12,
+        'título': 40,
+        'cantidad': 10,
+        'precio_actual': 12,
+        'importe_total': 15,
+        '% Activo': 8
+    }
+
+    # Frame con scroll para la tabla (arriba)
+    # Ordenar cartera
     cartera_df = pd.DataFrame(cartera)
     orden_tipos = {'ACC': 0, 'ETF': 1, 'PP': 2, 'FON': 3}
     cartera_df['orden_tipo'] = cartera_df['tipo_activo'].map(orden_tipos)
     cartera_df = cartera_df.sort_values(['orden_tipo', 'símbolo']).drop('orden_tipo', axis=1)
     total_general_calculado = cartera_df['importe_total'].sum()
 
-    # --- 2. Configurar el área de scroll principal para toda la ventana ---
-    main_canvas = tk.Canvas(ventana)
-    scrollbar = tk.Scrollbar(ventana, orient="vertical", command=main_canvas.yview)
-    content_frame = tk.Frame(main_canvas) # Frame que contendrá todo
+    columnas_map = {
+        'símbolo': 'SIMBOLO',
+        'título': 'TITULO',
+        'cantidad': 'CANTIDAD',
+        'precio_actual': 'PRECIO',
+        'importe_total': 'IMPORTE',
+        '% Activo': '%',
+        'tipo_activo': 'TIPO',
+        'broker': 'BROKER'
+    }
 
-    content_frame.bind("<Configure>", lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all")))
-    main_canvas.create_window((0, 0), window=content_frame, anchor="nw")
-    main_canvas.configure(yscrollcommand=scrollbar.set)
+    # Frame principal para la tabla con scroll
+    frame_scroll = tk.Frame(ventana)
+    frame_scroll.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    main_canvas.pack(side="left", fill="both", expand=True)
+    canvas = tk.Canvas(frame_scroll)
+    scrollbar = tk.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
+    frame_tabla = tk.Frame(canvas)
+
+    canvas.create_window((0, 0), window=frame_tabla, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
-    # --- 3. Crear y poblar la tabla de activos ---
-    frame_tabla = tk.Frame(content_frame)
-    frame_tabla.pack(pady=10, padx=10, anchor="n")
-
-    anchuras = {"símbolo": 10, "título": 35, "cantidad": 8, "precio_actual": 12, "importe_total": 12, "% Activo": 10, "tipo_activo": 8, "broker": 10}
-    columnas = ['símbolo', 'título', 'cantidad', 'precio_actual', 'importe_total', '% Activo', 'tipo_activo', 'broker']
-    columnas_map = {'símbolo': 'SÍMBOLO', 'título': 'TÍTULO', 'cantidad': 'CANTIDAD', 'precio_actual': 'PRECIO', 'importe_total': 'IMPORTE', '% Activo': '%', 'tipo_activo': 'TIPO', 'broker': 'BROKER'}
-
+    
     # Encabezados
     for i, columna in enumerate(columnas):
         anchor = "w" if columna == "título" else "center"
@@ -263,8 +291,30 @@ def ventana_ver_cartera():
         tk.Button(frame_tabla, text="Editar", command=lambda idx=idx_original: editar_elemento(idx)).grid(row=index + 1, column=len(columnas), sticky="ew")
         tk.Button(frame_tabla, text="Eliminar", command=lambda idx=idx_original: eliminar_elemento(idx)).grid(row=index + 1, column=len(columnas) + 1, sticky="ew")
     
+    frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+    
+    # --- Gráfico de barras de importes por tipo de activo ---
+    tipos_graf = ['ACC', 'ETF', 'PP', 'FON']
+    totales_tipo_graf = [totales_tipo[tipo] for tipo in tipos_graf]
+    colores = ['#FFDAB9', '#FFFFE0', '#ADD8E6', '#90EE90']
+
+    fig, ax = plt.subplots(figsize=(5, 2.2))
+    bars = ax.bar(tipos_graf, totales_tipo_graf, color=colores)
+    ax.set_ylabel('Importe (€)')
+    ax.set_title('Importe por Tipo de Activo')
+    ax.bar_label(bars, fmt='%.0f€')
+    fig.tight_layout()
+
+    # Frame para el gráfico, debajo de la tabla y antes de los sumarios
+    frame_grafico = tk.Frame(ventana)
+    frame_grafico.pack(fill=tk.X, padx=10, pady=(0, 10))
+    canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
+    canvas_graf.draw()
+    canvas_graf.get_tk_widget().pack(side=tk.LEFT, anchor="w")
+
+
     # Panel de sumarios (importes y cantidades)
-    frame_sumarios = tk.Frame(content_frame)
+    frame_sumarios = tk.Frame(ventana)
     frame_sumarios.pack(pady=20, padx=10, anchor="n", fill=tk.X, expand=True)
 
     # --- 4. Paneles de sumario ---
@@ -303,7 +353,7 @@ def ventana_ver_cartera():
             tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
     # --- 5. Gráfico de sectores ---
-    frame_grafico = tk.Frame(content_frame)
+    frame_grafico_pie = tk.Frame(ventana)
     frame_grafico.pack(pady=20, padx=10, anchor="n")
 
     labels_graf = [tipo for tipo, total in totales_tipo.items() if total > 0]
@@ -316,19 +366,19 @@ def ventana_ver_cartera():
         ax.axis('equal')  # Para asegurar que el gráfico sea un círculo.
         ax.set_title('Distribución por Tipo de Activo', fontsize=14, fontweight='bold')
         
-        canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
+        canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico_pie)
         canvas_graf.draw()
         canvas_graf.get_tk_widget().pack()
 
 def cargar_dividendos():
     try:
-        with open("dividendos.json", "r") as archivo:
+        with open(DIVIDENDOS_ARCHIVO, "r") as archivo:
             return json.load(archivo)
     except FileNotFoundError:
         return {}
 
 def guardar_dividendos(dividendos):
-    with open("dividendos.json", "w") as archivo:
+    with open(DIVIDENDOS_ARCHIVO, "w") as archivo:
         json.dump(dividendos, archivo, indent=4)
 
 def ventana_dividendos():
