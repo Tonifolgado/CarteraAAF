@@ -1,4 +1,3 @@
-# CarteraAAF
 # Gestor de Cartera AAF
 
 **Gestor de Cartera AAF** is a desktop application developed in Python that allows for the management and tracking of a personal investment portfolio. It provides a graphical user interface (GUI) to easily add, view, and manage financial assets, as well as track dividend income.
