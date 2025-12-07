@@ -255,60 +255,64 @@ def ventana_ver_cartera():
 
     frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
+    # --- Frame inferior para gráficos y resúmenes ---
+    frame_inferior = tk.Frame(ventana)
+    frame_inferior.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+
+    # --- Gráfico de barras y Resúmenes (lado a lado) ---
+    frame_izquierda = tk.Frame(frame_inferior)
+    frame_izquierda.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
     tipos_graf = ['ACC', 'ETF', 'PP', 'FON']
     totales_tipo_graf = [totales_tipo.get(tipo, 0) for tipo in tipos_graf]
     colores = ['#FFDAB9', '#FFFFE0', '#ADD8E6', '#90EE90']
 
-    fig, ax = plt.subplots(figsize=(5, 2.2))
+    fig, ax = plt.subplots(figsize=(5, 3)) # Ajustado tamaño
     bars = ax.bar(tipos_graf, totales_tipo_graf, color=colores)
     ax.set_ylabel('Importe (€)')
     ax.set_title('Importe por Tipo de Activo')
     ax.bar_label(bars, fmt='%.0f€')
     fig.tight_layout()
 
-    frame_grafico = tk.Frame(ventana)
-    frame_grafico.pack(fill=tk.X, padx=10, pady=(0, 10))
-    canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico)
+    canvas_graf = FigureCanvasTkAgg(fig, master=frame_izquierda)
     canvas_graf.draw()
-    canvas_graf.get_tk_widget().pack(side=tk.LEFT, anchor="w")
+    canvas_graf.get_tk_widget().pack(side=tk.TOP, fill=tk.X)
 
-    frame_sumarios = tk.Frame(ventana)
-    frame_sumarios.pack(pady=20, padx=10, anchor="n", fill=tk.X, expand=True)
-
-    frame_sumario = tk.Frame(frame_sumarios)
-    frame_sumario.pack(side="left", fill=tk.Y, expand=True, anchor="n")
-    tk.Label(frame_sumario, text=f"IMPORTE TOTAL: {total_general:.2f}€", font=("Arial", 16, "bold"), fg="red").pack(pady=10)
-    frame_columnas = tk.Frame(frame_sumario)
+    frame_sumario_importe = tk.Frame(frame_izquierda)
+    frame_sumario_importe.pack(fill=tk.X, pady=5)
+    tk.Label(frame_sumario_importe, text=f"IMPORTE TOTAL: {total_general:.2f}€", font=("Arial", 16, "bold"), fg="red").pack()
+    frame_columnas = tk.Frame(frame_sumario_importe)
     frame_columnas.pack()
     frame_tipos = tk.LabelFrame(frame_columnas, text="Totales por Tipo", font=("Arial", 12, "bold"))
-    frame_tipos.grid(row=0, column=0, padx=10, pady=5, sticky="n")
+    frame_tipos.pack(side=tk.LEFT, padx=5, pady=5, anchor="n")
     for tipo, total in totales_tipo.items():
         if total > 0:
             tk.Label(frame_tipos, text=f"{tipo}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
     frame_brokers = tk.LabelFrame(frame_columnas, text="Totales por Broker", font=("Arial", 12, "bold"))
-    frame_brokers.grid(row=0, column=1, padx=10, pady=5, sticky="n")
+    frame_brokers.pack(side=tk.LEFT, padx=5, pady=5, anchor="n")
     for broker, total in totales_broker.items():
         if total > 0:
             tk.Label(frame_brokers, text=f"{broker}: {total:.2f}€", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
-    frame_sumario_cant = tk.Frame(frame_sumarios)
-    frame_sumario_cant.pack(side="left", fill=tk.Y, expand=True, padx=40, anchor="n")
-    tk.Label(frame_sumario_cant, text=f"TOTAL ACCIONES: {total_acciones}", font=("Arial", 16, "bold"), fg="blue").pack(pady=10)
-    frame_columnas_cant = tk.Frame(frame_sumario_cant)
+    frame_sumario_cantidad = tk.Frame(frame_izquierda)
+    frame_sumario_cantidad.pack(fill=tk.X, pady=5)
+    tk.Label(frame_sumario_cantidad, text=f"TOTAL ACCIONES: {total_acciones}", font=("Arial", 16, "bold"), fg="blue").pack()
+    frame_columnas_cant = tk.Frame(frame_sumario_cantidad)
     frame_columnas_cant.pack()
     frame_tipos_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Tipo", font=("Arial", 12, "bold"))
-    frame_tipos_cant.grid(row=0, column=0, padx=10, pady=5, sticky="n")
+    frame_tipos_cant.pack(side=tk.LEFT, padx=5, pady=5, anchor="n")
     for tipo, total in totales_tipo_cant.items():
         if total > 0:
             tk.Label(frame_tipos_cant, text=f"{tipo}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
     frame_brokers_cant = tk.LabelFrame(frame_columnas_cant, text="Acciones por Broker", font=("Arial", 12, "bold"))
-    frame_brokers_cant.grid(row=0, column=1, padx=10, pady=5, sticky="n")
+    frame_brokers_cant.pack(side=tk.LEFT, padx=5, pady=5, anchor="n")
     for broker, total in totales_broker_cant.items():
         if total > 0:
             tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 11)).pack(anchor="w", padx=10, pady=2)
 
-    frame_grafico_pie = tk.Frame(ventana)
-    frame_grafico.pack(pady=20, padx=10, anchor="n")
+    # --- Gráfico circular (lado derecho) ---
+    frame_derecha = tk.Frame(frame_inferior)
+    frame_derecha.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(20, 0))
 
     labels_graf = [tipo for tipo, total in totales_tipo.items() if total > 0]
     valores_graf = [total for total in totales_tipo.values() if total > 0]
@@ -316,13 +320,13 @@ def ventana_ver_cartera():
 
     if valores_graf:
         fig, ax = plt.subplots(figsize=(7, 5))
-        ax.pie(valores_graf, labels=labels_graf, autopct='%1.1f%%', startangle=140, colors=colores)
+        ax.pie(valores_graf, labels=labels_graf, autopct='%1.1f%%', startangle=140, colors=colores, textprops={'fontsize': 10})
         ax.axis('equal')
         ax.set_title('Distribución por Tipo de Activo', fontsize=14, fontweight='bold')
 
-        canvas_graf = FigureCanvasTkAgg(fig, master=frame_grafico_pie)
-        canvas_graf.draw()
-        canvas_graf.get_tk_widget().pack()
+        canvas_pie = FigureCanvasTkAgg(fig, master=frame_derecha)
+        canvas_pie.draw()
+        canvas_pie.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
 def cargar_dividendos():
     try:
@@ -517,17 +521,20 @@ def ventana_dividendos():
 def iniciar_gui():
     root = tk.Tk()
     root.title("Gestor de Cartera AAF")
-    root.geometry("400x300")
+    root.geometry("400x350")
 
-    tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=30)
+    tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=20)
 
     tk.Button(root, text="Añadir Nuevos Activos", command=ventana_agregar_activos,
-             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=10)
+             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=5)
 
     tk.Button(root, text="Ver Cartera", command=ventana_ver_cartera,
-             width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=10)
+             width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=5)
 
     tk.Button(root, text="Ver Dividendos", command=ventana_dividendos,
-             width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
+             width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=5)
+
+    tk.Button(root, text="Salir", command=root.destroy,
+             width=25, height=2, font=("Arial", 12), bg="#FFC0CB").pack(pady=(20, 10))
 
     root.mainloop()
