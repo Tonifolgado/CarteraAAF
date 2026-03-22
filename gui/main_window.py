@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 import json
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt  # type: ignore
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # type: ignore
 from tkinter import ttk
-import pandas as pd
+import pandas as pd  # type: ignore
 
 from models.portfolio import Portfolio
 from services.market_data import obtener_precios_actuales
@@ -328,6 +328,8 @@ def ventana_ver_cartera():
         canvas_pie.draw()
         canvas_pie.get_tk_widget().pack(fill=tk.BOTH, expand=True)
 
+ANOS_DIVIDENDOS = [2022, 2023, 2024, 2025]
+
 def cargar_dividendos():
     try:
         with open(DIVIDENDOS_ARCHIVO, "r") as archivo:
@@ -361,7 +363,7 @@ def ventana_dividendos():
 
     frame_resumen = tk.LabelFrame(frame_resumen_tab, text="Resumen de Dividendos Totales", font=("Arial", 14, "bold"), padx=10, pady=10)
     frame_resumen.pack(fill=tk.X, padx=10, pady=10, anchor="n")
-    anos = [2022, 2023, 2024, 2025]
+    anos = ANOS_DIVIDENDOS
 
     totales_por_activo_ano = {activo.simbolo: {ano: 0 for ano in anos} for activo in activos_con_dividendos}
     totales_por_ano = {ano: 0 for ano in anos}
@@ -477,7 +479,6 @@ def ventana_dividendos():
             for activo in activos_con_dividendos:
                 simbolo = activo.simbolo
                 dividendos_data[str(ano)][simbolo] = [entry.get() for entry in entries[simbolo]]
-            guardar_dividendos(dividendos_data)
 
         for index, activo in enumerate(activos_con_dividendos):
             simbolo = activo.simbolo
@@ -515,26 +516,32 @@ def ventana_dividendos():
         actualizar_totales()
         frame_tabla.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
-    for ano in [2022, 2023, 2024, 2025]:
+    for ano in ANOS_DIVIDENDOS:
         crear_tabla_ano(ano)
+
+    frame_guardar = tk.Frame(ventana)
+    frame_guardar.pack(side=tk.BOTTOM, fill=tk.X, padx=20, pady=10)
+    
+    def guardar_cambios_dividendos():
+        guardar_dividendos(dividendos_data)
+        messagebox.showinfo("Guardado", "Todos los dividendos han sido guardados en disco correctamente.")
+        
+    tk.Button(frame_guardar, text="Guardar Todos los Dividendos", command=guardar_cambios_dividendos, bg="green", fg="white", font=("Arial", 12, "bold"), height=2).pack(side=tk.RIGHT)
 
 def iniciar_gui():
     root = tk.Tk()
     root.title("Gestor de Cartera AAF")
-    root.geometry("400x350")
+    root.geometry("400x300")
 
-    tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=20)
+    tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=30)
 
     tk.Button(root, text="Añadir Nuevos Activos", command=ventana_agregar_activos,
-             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=5)
+             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=10)
 
     tk.Button(root, text="Ver Cartera", command=ventana_ver_cartera,
-             width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=5)
+             width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=10)
 
     tk.Button(root, text="Ver Dividendos", command=ventana_dividendos,
-             width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=5)
-
-    tk.Button(root, text="Salir", command=root.destroy,
-             width=25, height=2, font=("Arial", 12), bg="#FFC0CB").pack(pady=(20, 10))
+             width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
 
     root.mainloop()
