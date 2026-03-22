@@ -2,9 +2,9 @@
     {
         "s\u00edmbolo": "NovartisPPE",
         "t\u00edtulo": "Santander PPE",
-        "cantidad": 47,
+        "cantidad": 60,
         "precio_actual": 120.0,
-        "importe_total": 5640.0,
+        "importe_total": 7200.0,
         "dividendos": "No",
         "tipo_activo": "PP",
         "broker": "sant"
@@ -22,9 +22,9 @@
     {
         "s\u00edmbolo": "0P00000VSG.F",
         "t\u00edtulo": "BBVA Futuro ISR, Cartera FI",
-        "cantidad": 7,
+        "cantidad": 8,
         "precio_actual": 968.426,
-        "importe_total": 6778.982,
+        "importe_total": 7747.408,
         "dividendos": "No",
         "tipo_activo": "FON",
         "broker": "bbva"
@@ -32,9 +32,9 @@
     {
         "s\u00edmbolo": "HDLV.DE",
         "t\u00edtulo": "INVS&P500HiDivLowVltyUCITSETFD (XETR:HDLV)",
-        "cantidad": 50,
-        "precio_actual": 30.66,
-        "importe_total": 1533.0,
+        "cantidad": 55,
+        "precio_actual": 31.595,
+        "importe_total": 1737.725,
         "dividendos": "S\u00ed",
         "tipo_activo": "ETF",
         "broker": "degiro"
@@ -42,9 +42,9 @@
     {
         "s\u00edmbolo": "IWDP.AS",
         "t\u00edtulo": "iShs DvlpMktsPropYld ETF USDD (XMIL:IWDP)",
-        "cantidad": 50,
-        "precio_actual": 20.302,
-        "importe_total": 1015.1,
+        "cantidad": 60,
+        "precio_actual": 20.994,
+        "importe_total": 1259.6399999999999,
         "dividendos": "S\u00ed",
         "tipo_activo": "ETF",
         "broker": "degiro"
@@ -52,9 +52,9 @@
     {
         "s\u00edmbolo": "IWRD.AS",
         "t\u00edtulo": "iShs MSCI World ETF USD D (XAMS:IWRD)",
-        "cantidad": 25,
-        "precio_actual": 74.015,
-        "importe_total": 1850.375,
+        "cantidad": 30,
+        "precio_actual": 78.485,
+        "importe_total": 2354.55,
         "dividendos": "S\u00ed",
         "tipo_activo": "ETF",
         "broker": "degiro"
@@ -62,9 +62,9 @@
     {
         "s\u00edmbolo": "EXSA.DE",
         "t\u00edtulo": "iShares STOXXEurope600UCITSETF (XETR:EXSA)",
-        "cantidad": 30,
-        "precio_actual": 53.23,
-        "importe_total": 1596.8999999999999,
+        "cantidad": 40,
+        "precio_actual": 56.7,
+        "importe_total": 2268.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ETF",
         "broker": "degiro"
@@ -72,9 +72,9 @@
     {
         "s\u00edmbolo": "ENO",
         "t\u00edtulo": "Elecnor SA (BMEX:ENO)",
-        "cantidad": 40,
-        "precio_actual": 22.31,
-        "importe_total": 892.4,
+        "cantidad": 45,
+        "precio_actual": 30.0,
+        "importe_total": 1350.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
@@ -82,9 +82,9 @@
     {
         "s\u00edmbolo": "LOG",
         "t\u00edtulo": "Logista Integral SA (BMEX:LOG)",
-        "cantidad": 40,
-        "precio_actual": 27.64,
-        "importe_total": 1105.6,
+        "cantidad": 50,
+        "precio_actual": 30.92,
+        "importe_total": 1546.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
@@ -92,9 +92,9 @@
     {
         "s\u00edmbolo": "RED",
         "t\u00edtulo": "Redeia Corporacion SA (BMEX:RED)",
-        "cantidad": 30,
-        "precio_actual": 16.57,
-        "importe_total": 497.1,
+        "cantidad": 50,
+        "precio_actual": 14.9,
+        "importe_total": 745.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
@@ -102,9 +102,9 @@
     {
         "s\u00edmbolo": "IBE",
         "t\u00edtulo": "Iberdrola SA (BMEX:IBE)",
-        "cantidad": 41,
-        "precio_actual": 15.27,
-        "importe_total": 626.0699999999999,
+        "cantidad": 51,
+        "precio_actual": 19.175,
+        "importe_total": 977.9250000000001,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
@@ -112,9 +112,9 @@
     {
         "s\u00edmbolo": "ACS",
         "t\u00edtulo": "ACS Actividades de Construccion y Servicios SA (BMEX:ACS)",
-        "cantidad": 25,
-        "precio_actual": 58.6,
-        "importe_total": 1465.0,
+        "cantidad": 30,
+        "precio_actual": 103.1,
+        "importe_total": 3093.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
@@ -122,9 +122,9 @@
     {
         "s\u00edmbolo": "SOBA",
         "t\u00edtulo": "AT&T INC. (XFRA:SOBA)",
-        "cantidad": 20,
-        "precio_actual": 23.88,
-        "importe_total": 477.59999999999997,
+        "cantidad": 25,
+        "precio_actual": 24.455,
+        "importe_total": 611.375,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -133,8 +133,8 @@
         "s\u00edmbolo": "INL",
         "t\u00edtulo": "INTEL CORPORATION (XFRA:INL)",
         "cantidad": 20,
-        "precio_actual": 16.59,
-        "importe_total": 331.8,
+        "precio_actual": 38.04,
+        "importe_total": 760.8,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -142,9 +142,9 @@
     {
         "s\u00edmbolo": "KHNZ",
         "t\u00edtulo": "THE KRAFT HEINZ COMPANY (XETR:KHNZ)",
-        "cantidad": 20,
-        "precio_actual": 23.75,
-        "importe_total": 475.0,
+        "cantidad": 25,
+        "precio_actual": 18.724,
+        "importe_total": 468.1,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -152,9 +152,9 @@
     {
         "s\u00edmbolo": "LTP",
         "t\u00edtulo": "LTC PROPERTIES, INC. (XFRA:LTP)",
-        "cantidad": 20,
-        "precio_actual": 29.48,
-        "importe_total": 589.6,
+        "cantidad": 25,
+        "precio_actual": 31.62,
+        "importe_total": 790.5,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -162,9 +162,9 @@
     {
         "s\u00edmbolo": "GUI",
         "t\u00edtulo": "DIAGEO PLC (XETR:GUI)",
-        "cantidad": 20,
-        "precio_actual": 21.0,
-        "importe_total": 420.0,
+        "cantidad": 25,
+        "precio_actual": 16.45,
+        "importe_total": 411.25,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -172,9 +172,9 @@
     {
         "s\u00edmbolo": "SHELL",
         "t\u00edtulo": "SHELL PLC (XAMS:SHELL)",
-        "cantidad": 15,
-        "precio_actual": 31.2,
-        "importe_total": 468.0,
+        "cantidad": 20,
+        "precio_actual": 39.57,
+        "importe_total": 791.4,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -182,9 +182,9 @@
     {
         "s\u00edmbolo": "UNA",
         "t\u00edtulo": "UNILEVER PLC (XAMS:UNA)",
-        "cantidad": 20,
-        "precio_actual": 52.16,
-        "importe_total": 1043.1999999999998,
+        "cantidad": 17,
+        "precio_actual": 53.0,
+        "importe_total": 901.0,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -192,9 +192,9 @@
     {
         "s\u00edmbolo": "BAC",
         "t\u00edtulo": "VERIZON COMMUNICATIONS INC. (XFRA:BAC)",
-        "cantidad": 20,
-        "precio_actual": 45.66,
-        "importe_total": 913.1999999999999,
+        "cantidad": 25,
+        "precio_actual": 43.505,
+        "importe_total": 1087.625,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -212,9 +212,9 @@
     {
         "s\u00edmbolo": "CTP2",
         "t\u00edtulo": "COMCAST CORPORATION (XFRA:CTP2)",
-        "cantidad": 20,
-        "precio_actual": 29.01,
-        "importe_total": 580.2,
+        "cantidad": 25,
+        "precio_actual": 25.175,
+        "importe_total": 629.375,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -222,9 +222,9 @@
     {
         "s\u00edmbolo": "PFE",
         "t\u00edtulo": "PFIZER INC. (XNYS:PFE)",
-        "cantidad": 15,
-        "precio_actual": 23.49,
-        "importe_total": 352.34999999999997,
+        "cantidad": 25,
+        "precio_actual": 23.375,
+        "importe_total": 584.375,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "degiro"
@@ -232,9 +232,9 @@
     {
         "s\u00edmbolo": "ENG",
         "t\u00edtulo": "Enagas",
-        "cantidad": 40,
-        "precio_actual": 13.13,
-        "importe_total": 525.2,
+        "cantidad": 50,
+        "precio_actual": 14.71,
+        "importe_total": 735.5,
         "dividendos": "S\u00ed",
         "tipo_activo": "ACC",
         "broker": "ocean"
