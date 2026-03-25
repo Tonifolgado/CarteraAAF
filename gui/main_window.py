@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt  # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg  # type: ignore
 from tkinter import ttk
 import pandas as pd  # type: ignore
+import os
 
 from models.portfolio import Portfolio
 from services.market_data import obtener_precios_actuales
@@ -49,6 +50,30 @@ def ventana_agregar_activos():
     broker_combobox = tk.OptionMenu(ventana, broker_var, 'ocean', 'degiro', 'cxbank', 'bbva', 'sant')
     broker_combobox.grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
+    tk.Label(ventana, text="Comisión:").grid(row=3, column=2, padx=5, pady=5, sticky="e")
+    entry_comision = tk.Entry(ventana, width=15)
+    entry_comision.insert(0, "0.0")
+    entry_comision.grid(row=3, column=3, padx=5, pady=5)
+
+    tk.Label(ventana, text="Precio final:").grid(row=4, column=0, padx=5, pady=5, sticky="e")
+    var_precio_final = tk.StringVar(value="0.00")
+    entry_precio_final = tk.Entry(ventana, textvariable=var_precio_final, width=15, state="readonly")
+    entry_precio_final.grid(row=4, column=1, padx=5, pady=5)
+
+    def actualizar_precio_final(*args):
+        try:
+            cant = float(entry_cantidad.get() or 0)
+            prec = float(entry_precio_manual.get() or 0)
+            comis = float(entry_comision.get() or 0)
+            pf = (cant * prec) + comis
+            var_precio_final.set(f"{pf:.2f}")
+        except ValueError:
+            pass
+
+    entry_cantidad.bind('<KeyRelease>', actualizar_precio_final)
+    entry_precio_manual.bind('<KeyRelease>', actualizar_precio_final)
+    entry_comision.bind('<KeyRelease>', actualizar_precio_final)
+
     def agregar_elemento():
         simbolo = entry_simbolo.get().strip()
         titulo = entry_titulo.get().strip()
@@ -60,6 +85,13 @@ def ventana_agregar_activos():
             return
 
         cantidad = int(cantidad)
+
+        try:
+            comision = float(entry_comision.get() or 0.0)
+        except ValueError:
+            messagebox.showerror("Error", "La comisión debe ser un número válido.")
+            return
+
         precios_actuales = obtener_precios_actuales([simbolo])
         precio_actual = precios_actuales.get(simbolo, 0.0)
 
@@ -73,12 +105,15 @@ def ventana_agregar_activos():
                 messagebox.showerror("Error", "El precio ingresado manualmente no es válido.")
                 return
 
+        precio_final = (cantidad * precio_actual) + comision
+        var_precio_final.set(f"{precio_final:.2f}")
+
         asset = Asset(
             simbolo,
             titulo,
             cantidad,
             precio_actual,
-            cantidad * precio_actual,
+            precio_final,
             'Sí' if var_dividendos.get() else 'No',
             tipo_activo_var.get(),
             broker_var.get()
@@ -89,13 +124,16 @@ def ventana_agregar_activos():
         entry_titulo.delete(0, tk.END)
         entry_cantidad.delete(0, tk.END)
         entry_precio_manual.delete(0, tk.END)
+        entry_comision.delete(0, tk.END)
+        entry_comision.insert(0, "0.0")
+        var_precio_final.set("0.00")
         var_dividendos.set(False)
         tipo_activo_var.set('')
         broker_var.set('')
 
     boton_agregar = tk.Button(ventana, text="AGREGAR ACTIVO", command=agregar_elemento,
-                             bg="green", fg="white", font=("Arial", 10, "bold"))
-    boton_agregar.grid(row=4, column=1, columnspan=2, padx=10, pady=20, sticky="ew")
+                             bg="green", fg="black", font=("Arial", 10, "bold"))
+    boton_agregar.grid(row=5, column=1, columnspan=2, padx=10, pady=20, sticky="ew")
 
 def ventana_ver_cartera():
     ventana = tk.Toplevel()
@@ -341,7 +379,7 @@ def ventana_ver_cartera():
         if total > 0:
             tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 10)).pack(anchor="w", padx=10, pady=1)
 
-ANOS_DIVIDENDOS = [2022, 2023, 2024, 2025]
+ANOS_DIVIDENDOS = [2022, 2023, 2024, 2025, 2026]
 
 def cargar_dividendos():
     try:
@@ -551,6 +589,130 @@ def ventana_dividendos():
         
     tk.Button(frame_guardar, text="Guardar Todos los Dividendos", command=guardar_cambios_dividendos, bg="green", fg="black", font=("Arial", 12, "bold"), height=2).pack(side=tk.RIGHT)
 
+def ventana_saldos_mensuales():
+    ventana = tk.Toplevel()
+    ventana.title("Saldos Mensuales")
+    ventana.geometry("800x900")
+
+    # Obtener ruta al archivo CSV
+    ruta_csv = os.path.join(os.path.dirname(__file__), "..", "BalancesMensuales.csv")
+    ruta_csv = os.path.abspath(ruta_csv)
+
+    # Función para convertir valores de euros a float
+    def convertir_euro_a_float(valor_str):
+        if not valor_str or valor_str.strip() == '':
+            return 0.0
+        valor_str = valor_str.strip()
+        valor_str = valor_str.replace('€', '').strip()
+        valor_str = valor_str.replace('.', '')  # Eliminar separadores de miles
+        valor_str = valor_str.replace(',', '.')  # Cambiar coma decimal a punto
+        try:
+            return float(valor_str)
+        except ValueError:
+            return 0.0
+
+    # Parsear el archivo CSV
+    datos_por_ano = {}
+    ano_actual = None
+
+    try:
+        with open(ruta_csv, "r", encoding="utf-8") as f:
+            lineas = f.readlines()
+            
+        for linea in lineas[1:]:  # Omitir encabezado
+            # Solo remover saltos de línea, no espacios al inicio
+            linea = linea.rstrip('\n\r')
+            if not linea or linea.strip() == '':
+                continue
+            
+            partes = linea.split('\t')
+            
+            # Si la línea comienza con un año
+            if partes[0] and partes[0][0].isdigit() and len(partes[0]) == 4:
+                ano_actual = int(partes[0])
+                if ano_actual not in datos_por_ano:
+                    datos_por_ano[ano_actual] = []
+                mes = partes[1].strip() if len(partes) > 1 else ''
+                ingresos = convertir_euro_a_float(partes[2] if len(partes) > 2 else '0')
+                gastos = convertir_euro_a_float(partes[3] if len(partes) > 3 else '0')
+                saldo = convertir_euro_a_float(partes[4] if len(partes) > 4 else '0')
+                datos_por_ano[ano_actual].append({
+                    'mes': mes,
+                    'ingresos': ingresos,
+                    'gastos': gastos,
+                    'saldo': saldo
+                })
+            # Si no comienza con año, es un mes del año anterior
+            elif ano_actual is not None and partes[0].strip() == '':
+                mes = partes[1].strip() if len(partes) > 1 else ''
+                ingresos = convertir_euro_a_float(partes[2] if len(partes) > 2 else '0')
+                gastos = convertir_euro_a_float(partes[3] if len(partes) > 3 else '0')
+                saldo = convertir_euro_a_float(partes[4] if len(partes) > 4 else '0')
+                datos_por_ano[ano_actual].append({
+                    'mes': mes,
+                    'ingresos': ingresos,
+                    'gastos': gastos,
+                    'saldo': saldo
+                })
+    except FileNotFoundError:
+        tk.Label(ventana, text="No se encontró el archivo BalancesMensuales.csv", font=("Arial", 14)).pack(pady=50)
+        return
+
+    # Frame con scroll
+    frame_scroll = tk.Frame(ventana)
+    frame_scroll.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    canvas = tk.Canvas(frame_scroll)
+    scrollbar = tk.Scrollbar(frame_scroll, orient="vertical", command=canvas.yview)
+    frame_contenido = tk.Frame(canvas)
+
+    canvas.create_window((0, 0), window=frame_contenido, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    # Mostrar datos
+    for ano in sorted(datos_por_ano.keys()):
+        # Frame para el año
+        frame_ano = tk.LabelFrame(frame_contenido, text=f"AÑO {ano}", font=("Arial", 12, "bold"), padx=10, pady=10)
+        frame_ano.pack(fill=tk.X, padx=5, pady=10)
+
+        # Encabezados
+        tk.Label(frame_ano, text="MES", font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1, width=15, anchor="w").grid(row=0, column=0, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_ano, text="INGRESOS", font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1, width=15, anchor="e").grid(row=0, column=1, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_ano, text="GASTOS", font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1, width=15, anchor="e").grid(row=0, column=2, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_ano, text="SALDO", font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1, width=15, anchor="e").grid(row=0, column=3, sticky="ew", padx=2, pady=2)
+
+        # Datos mensuales
+        meses = datos_por_ano[ano]
+        total_ingresos = 0
+        total_gastos = 0
+        total_saldo = 0
+
+        for i, mes_data in enumerate(meses, start=1):
+            total_ingresos += mes_data['ingresos']
+            total_gastos += mes_data['gastos']
+            total_saldo += mes_data['saldo']
+
+            tk.Label(frame_ano, text=mes_data['mes'], font=("Arial", 9), anchor="w", relief="solid", borderwidth=1).grid(row=i, column=0, sticky="ew", padx=2, pady=2)
+            tk.Label(frame_ano, text=f"{mes_data['ingresos']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=i, column=1, sticky="ew", padx=2, pady=2)
+            tk.Label(frame_ano, text=f"{mes_data['gastos']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=i, column=2, sticky="ew", padx=2, pady=2)
+            tk.Label(frame_ano, text=f"{mes_data['saldo']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=i, column=3, sticky="ew", padx=2, pady=2)
+
+        # Fila de totales
+        row_total = len(meses) + 1
+        tk.Label(frame_ano, text="TOTAL AÑO", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="w").grid(row=row_total, column=0, sticky="ew", padx=2, pady=5)
+        tk.Label(frame_ano, text=f"{total_ingresos:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_total, column=1, sticky="ew", padx=2, pady=5)
+        tk.Label(frame_ano, text=f"{total_gastos:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_total, column=2, sticky="ew", padx=2, pady=5)
+        tk.Label(frame_ano, text=f"{total_saldo:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_total, column=3, sticky="ew", padx=2, pady=5)
+
+        frame_ano.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+    canvas.bind('<MouseWheel>', lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
+    canvas.bind('<Button-4>', lambda e: canvas.yview_scroll(5, "units"))
+    canvas.bind('<Button-5>', lambda e: canvas.yview_scroll(-5, "units"))
+
+
 def iniciar_gui():
     root = tk.Tk()
     root.title("Gestor de Cartera AAF")
@@ -571,5 +733,8 @@ def iniciar_gui():
 
     tk.Button(root, text="Ver Dividendos", command=ventana_dividendos,
              width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
+
+    tk.Button(root, text="Saldos Mensuales", command=ventana_saldos_mensuales,
+             width=25, height=2, font=("Arial", 12), bg="lightcoral").pack(pady=10)
 
     root.mainloop()
