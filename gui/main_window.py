@@ -395,7 +395,7 @@ def guardar_dividendos(dividendos):
 def ventana_dividendos():
     ventana = tk.Toplevel()
     ventana.title("Dividendos")
-    ventana.geometry("900x800")
+    ventana.geometry("900x900")
 
     cartera = portfolio.get_all_assets()
     activos_con_dividendos = [asset for asset in cartera if asset.dividendos == 'Sí']
@@ -413,9 +413,9 @@ def ventana_dividendos():
         selected_tab = event.widget.select()
         tab_text = event.widget.tab(selected_tab, "text")
         if tab_text == "Resumen":
-            ventana.geometry("900x800")
+            ventana.geometry("900x900")
         else:
-            ventana.geometry("1400x800")
+            ventana.geometry("1400x900")
 
     notebook.bind("<<NotebookTabChanged>>", on_tab_change)
 
@@ -592,7 +592,7 @@ def ventana_dividendos():
 def ventana_saldos_mensuales():
     ventana = tk.Toplevel()
     ventana.title("Saldos Mensuales")
-    ventana.geometry("800x900")
+    ventana.geometry("800x1000")
 
     # Obtener ruta al archivo CSV
     ruta_csv = os.path.join(os.path.dirname(__file__), "..", "BalancesMensuales.csv")
@@ -658,6 +658,61 @@ def ventana_saldos_mensuales():
         tk.Label(ventana, text="No se encontró el archivo BalancesMensuales.csv", font=("Arial", 14)).pack(pady=50)
         return
 
+    if datos_por_ano:
+        anos_ordenados = sorted(datos_por_ano.keys())
+        ventana.title(f"Balances anuales del {anos_ordenados[0]} al {anos_ordenados[-1]}")
+
+    # --- Tabla Resumen General ---
+    resumen_anual = {}
+    gran_total_ingresos = 0
+    gran_total_gastos = 0
+    gran_total_saldo = 0
+
+    for ano, meses_data in sorted(datos_por_ano.items()):
+        total_ingresos_ano = sum(d['ingresos'] for d in meses_data)
+        total_gastos_ano = sum(d['gastos'] for d in meses_data)
+        total_saldo_ano = sum(d['saldo'] for d in meses_data)
+        
+        resumen_anual[ano] = {
+            'ingresos': total_ingresos_ano,
+            'gastos': total_gastos_ano,
+            'saldo': total_saldo_ano
+        }
+        
+        gran_total_ingresos += total_ingresos_ano
+        gran_total_gastos += total_gastos_ano
+        gran_total_saldo += total_saldo_ano
+
+    frame_resumen_general = tk.LabelFrame(ventana, text="Resumen Anual General", font=("Arial", 12, "bold"), padx=10, pady=10)
+    frame_resumen_general.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+
+    headers = ["AÑO", "TOTAL INGRESOS", "TOTAL GASTOS", "TOTAL SALDO"]
+    for i, header in enumerate(headers):
+        tk.Label(frame_resumen_general, text=header, font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1).grid(row=0, column=i, sticky="ew", padx=2, pady=2)
+
+    row_idx = 1
+    for ano, totales in sorted(resumen_anual.items()):
+        tk.Label(frame_resumen_general, text=str(ano), font=("Arial", 9), anchor="w", relief="solid", borderwidth=1).grid(row=row_idx, column=0, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_resumen_general, text=f"{totales['ingresos']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=row_idx, column=1, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_resumen_general, text=f"{totales['gastos']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=row_idx, column=2, sticky="ew", padx=2, pady=2)
+        tk.Label(frame_resumen_general, text=f"{totales['saldo']:.2f}€", font=("Arial", 9), anchor="e", relief="solid", borderwidth=1).grid(row=row_idx, column=3, sticky="ew", padx=2, pady=2)
+        row_idx += 1
+
+    tk.Label(frame_resumen_general, text="TOTAL", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="w").grid(row=row_idx, column=0, sticky="ew", padx=2, pady=5)
+    tk.Label(frame_resumen_general, text=f"{gran_total_ingresos:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_idx, column=1, sticky="ew", padx=2, pady=5)
+    tk.Label(frame_resumen_general, text=f"{gran_total_gastos:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_idx, column=2, sticky="ew", padx=2, pady=5)
+    tk.Label(frame_resumen_general, text=f"{gran_total_saldo:.2f}€", font=("Arial", 12, "bold"), bg="orange", relief="solid", borderwidth=2, anchor="e").grid(row=row_idx, column=3, sticky="ew", padx=2, pady=5)
+
+    for i in range(4):
+        frame_resumen_general.grid_columnconfigure(i, weight=1)
+
+    # Frame para el índice superior
+    frame_indice = tk.Frame(ventana)
+    frame_indice.pack(side=tk.TOP, fill=tk.X, padx=10, pady=5)
+    tk.Label(frame_indice, text="Ir al año:", font=("Arial", 10, "bold")).pack(side=tk.LEFT, padx=5, anchor="n", pady=4)
+    frame_botones_indice = tk.Frame(frame_indice)
+    frame_botones_indice.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
     # Frame con scroll
     frame_scroll = tk.Frame(ventana)
     frame_scroll.pack(side=tk.TOP, fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -671,11 +726,14 @@ def ventana_saldos_mensuales():
     canvas.pack(side="left", fill="both", expand=True)
     scrollbar.pack(side="right", fill="y")
 
+    frames_por_ano = {}
+
     # Mostrar datos
     for ano in sorted(datos_por_ano.keys()):
         # Frame para el año
         frame_ano = tk.LabelFrame(frame_contenido, text=f"AÑO {ano}", font=("Arial", 12, "bold"), padx=10, pady=10)
         frame_ano.pack(fill=tk.X, padx=5, pady=10)
+        frames_por_ano[ano] = frame_ano
 
         # Encabezados
         tk.Label(frame_ano, text="MES", font=("Arial", 10, "bold"), bg="lightblue", relief="solid", borderwidth=1, width=15, anchor="w").grid(row=0, column=0, sticky="ew", padx=2, pady=2)
@@ -708,6 +766,19 @@ def ventana_saldos_mensuales():
 
         frame_ano.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
 
+    # Función y botones para el índice
+    def ir_a_ano(ano_seleccionado):
+        frame_contenido.update_idletasks()
+        y_pos = frames_por_ano[ano_seleccionado].winfo_y()
+        total_height = frame_contenido.winfo_height()
+        if total_height > 0:
+            canvas.yview_moveto(y_pos / total_height)
+
+    for i, ano in enumerate(sorted(datos_por_ano.keys())):
+        fila = i // 10
+        columna = i % 10
+        tk.Button(frame_botones_indice, text=str(ano), command=lambda a=ano: ir_a_ano(a)).grid(row=fila, column=columna, padx=2, pady=2)
+
     canvas.bind('<MouseWheel>', lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
     canvas.bind('<Button-4>', lambda e: canvas.yview_scroll(5, "units"))
     canvas.bind('<Button-5>', lambda e: canvas.yview_scroll(-5, "units"))
@@ -716,7 +787,7 @@ def ventana_saldos_mensuales():
 def iniciar_gui():
     root = tk.Tk()
     root.title("Gestor de Cartera AAF")
-    root.geometry("400x300")
+    root.geometry("400x400")
 
     # Forzar la ventana principal a estar en primer plano al iniciar
     root.attributes('-topmost', True)
