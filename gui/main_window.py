@@ -13,8 +13,11 @@ from models.asset import Asset
 
 CARTERA_ARCHIVO = "data/cartera.json"
 DIVIDENDOS_ARCHIVO = "data/dividendos.json"
+PATRIMONIO_ARCHIVO = "data/patrimonio.json"
 
 portfolio = Portfolio(CARTERA_ARCHIVO)
+
+ventana_saldos_ref = None  # Referencia global para poder actualizar la ventana si está abierta
 
 def ventana_agregar_activos():
     ventana = tk.Toplevel()
@@ -589,8 +592,116 @@ def ventana_dividendos():
         
     tk.Button(frame_guardar, text="Guardar Todos los Dividendos", command=guardar_cambios_dividendos, bg="green", fg="black", font=("Arial", 12, "bold"), height=2).pack(side=tk.RIGHT)
 
-def ventana_saldos_mensuales():
+def ventana_agregar_saldo_mensual():
     ventana = tk.Toplevel()
+    ventana.title("Añadir Nuevo Saldo Mensual")
+    ventana.geometry("400x350")
+
+    def format_float_to_euro_str(value):
+        is_negative = value < 0
+        abs_value = abs(value)
+        s = f"{abs_value:.2f}"
+        s = s.replace('.', ',')
+        parts = s.split(',')
+        integer_part = parts[0]
+        decimal_part = parts[1] if len(parts) > 1 else '00'
+
+        formatted_integer_part = []
+        for i, digit in enumerate(reversed(integer_part)):
+            if i > 0 and i % 3 == 0:
+                formatted_integer_part.append('.')
+            formatted_integer_part.append(digit)
+        formatted_integer_part = "".join(reversed(formatted_integer_part))
+
+        sign = "-" if is_negative else ""
+        return f"{sign}{formatted_integer_part},{decimal_part} €"
+
+    tk.Label(ventana, text="Año (YYYY):").grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    entry_ano = tk.Entry(ventana, width=10)
+    entry_ano.grid(row=0, column=1, padx=5, pady=5)
+
+    tk.Label(ventana, text="Mes:").grid(row=1, column=0, padx=5, pady=5, sticky="e")
+    meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    mes_var = tk.StringVar(ventana)
+    mes_var.set(meses[0]) 
+    option_mes = tk.OptionMenu(ventana, mes_var, *meses)
+    option_mes.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+
+    tk.Label(ventana, text="Ingresos (€):").grid(row=2, column=0, padx=5, pady=5, sticky="e")
+    entry_ingresos = tk.Entry(ventana, width=15)
+    entry_ingresos.grid(row=2, column=1, padx=5, pady=5)
+
+    tk.Label(ventana, text="Gastos (€):").grid(row=3, column=0, padx=5, pady=5, sticky="e")
+    entry_gastos = tk.Entry(ventana, width=15)
+    entry_gastos.grid(row=3, column=1, padx=5, pady=5)
+
+    tk.Label(ventana, text="Saldo (€):").grid(row=4, column=0, padx=5, pady=5, sticky="e")
+    saldo_var = tk.StringVar(value="0,00 €")
+    entry_saldo = tk.Entry(ventana, textvariable=saldo_var, state="readonly", width=15)
+    entry_saldo.grid(row=4, column=1, padx=5, pady=5)
+
+    def actualizar_saldo(*args):
+        try:
+            ingresos = float(entry_ingresos.get().replace('.', '').replace(',', '.') or 0.0)
+            gastos = float(entry_gastos.get().replace('.', '').replace(',', '.') or 0.0)
+            saldo = ingresos - gastos
+            saldo_var.set(format_float_to_euro_str(saldo))
+        except ValueError:
+            saldo_var.set("Error")
+
+    entry_ingresos.bind('<KeyRelease>', actualizar_saldo)
+    entry_gastos.bind('<KeyRelease>', actualizar_saldo)
+
+    def guardar_saldo_mensual():
+        ano_str = entry_ano.get().strip()
+        mes = mes_var.get()
+        
+        if not ano_str.isdigit() or len(ano_str) != 4:
+            messagebox.showerror("Error", "El año debe ser un número de 4 dígitos.")
+            return
+        
+        try:
+            ingresos = float(entry_ingresos.get().replace('.', '').replace(',', '.') or 0.0)
+            gastos = float(entry_gastos.get().replace('.', '').replace(',', '.') or 0.0)
+        except ValueError:
+            messagebox.showerror("Error", "Ingresos y Gastos deben ser números válidos.")
+            return
+
+        saldo = ingresos - gastos
+
+        ingresos_csv = format_float_to_euro_str(ingresos)
+        gastos_csv = format_float_to_euro_str(gastos)
+        saldo_csv = format_float_to_euro_str(saldo)
+
+        linea_nueva = f"{ano_str}\t{mes}\t{ingresos_csv}\t{gastos_csv}\t{saldo_csv}\n"
+        
+        ruta_csv = os.path.join(os.path.dirname(__file__), "..", "BalancesMensuales.csv")
+        try:
+            if not os.path.exists(ruta_csv) or os.path.getsize(ruta_csv) == 0:
+                with open(ruta_csv, "w", encoding="utf-8") as f:
+                    f.write("AÑO\tMES\tINGRESOS\tGASTOS\tSALDO\n")
+
+            with open(ruta_csv, "a", encoding="utf-8") as f:
+                f.write(linea_nueva)
+            messagebox.showinfo("Éxito", "Saldo mensual añadido correctamente.")
+            ventana.destroy()
+            
+            global ventana_saldos_ref
+            if ventana_saldos_ref is not None and ventana_saldos_ref.winfo_exists():
+                ventana_saldos_mensuales()
+                
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo guardar el saldo: {e}")
+
+    tk.Button(ventana, text="Guardar Saldo", command=guardar_saldo_mensual, bg="green", fg="black", font=("Arial", 10, "bold")).grid(row=5, column=0, columnspan=2, padx=10, pady=20)
+
+def ventana_saldos_mensuales():
+    global ventana_saldos_ref
+    if ventana_saldos_ref is not None and ventana_saldos_ref.winfo_exists():
+        ventana_saldos_ref.destroy()
+
+    ventana = tk.Toplevel()
+    ventana_saldos_ref = ventana
     ventana.title("Saldos Mensuales")
     ventana.geometry("800x1000")
 
@@ -784,10 +895,304 @@ def ventana_saldos_mensuales():
     canvas.bind('<Button-5>', lambda e: canvas.yview_scroll(-5, "units"))
 
 
+def cargar_patrimonio():
+    """Carga los datos de patrimonio del archivo JSON"""
+    try:
+        with open(PATRIMONIO_ARCHIVO, "r", encoding="utf-8") as archivo:
+            return json.load(archivo)
+    except FileNotFoundError:
+        return {}
+
+
+def guardar_patrimonio(patrimonio_data):
+    """Guarda los datos de patrimonio en archivo JSON"""
+    os.makedirs(os.path.dirname(PATRIMONIO_ARCHIVO), exist_ok=True)
+    with open(PATRIMONIO_ARCHIVO, "w", encoding="utf-8") as archivo:
+        json.dump(patrimonio_data, archivo, indent=4, ensure_ascii=False)
+
+
+def ventana_patrimonio():
+    """Ventana para gestionar el patrimonio mensual"""
+    ventana = tk.Toplevel()
+    ventana.title("Patrimonio")
+    ventana.geometry("1200x800")
+
+    # Meses y columnas a mostrar
+    meses = ["Enero", "Marzo", "Mayo", "Julio", "Octubre", "Diciembre"]
+    anos = [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    
+    patrimonio_data = cargar_patrimonio()
+    
+    # --- LEYENDA ---
+    frame_leyenda = tk.LabelFrame(ventana, text="Leyenda", font=("Arial", 10, "bold"), 
+                                   bg="lightyellow", padx=10, pady=8)
+    frame_leyenda.pack(fill=tk.X, padx=10, pady=8)
+    
+    frame_leyenda_contenido = tk.Frame(frame_leyenda, bg="lightyellow")
+    frame_leyenda_contenido.pack(fill=tk.X)
+    
+    tk.Label(frame_leyenda_contenido, text="Cuentas Corrientes (CC):", 
+             font=("Arial", 9, "bold"), bg="lightblue", relief="solid", 
+             borderwidth=1, width=20, anchor="w").pack(side=tk.LEFT, padx=3, pady=3)
+    tk.Label(frame_leyenda_contenido, text="CaixaBank, BBVA", 
+             font=("Arial", 9), bg="lightyellow").pack(side=tk.LEFT, padx=3, pady=3)
+    
+    tk.Label(frame_leyenda_contenido, text="Planes de Pensiones (PP):", 
+             font=("Arial", 9, "bold"), bg="lightgreen", relief="solid", 
+             borderwidth=1, width=20, anchor="w").pack(side=tk.LEFT, padx=10, pady=3)
+    tk.Label(frame_leyenda_contenido, text="CaixaBank, Santander", 
+             font=("Arial", 9), bg="lightyellow").pack(side=tk.LEFT, padx=3, pady=3)
+    
+    tk.Label(frame_leyenda_contenido, text="Inversiones (INV):", 
+             font=("Arial", 9, "bold"), bg="lightyellow", relief="solid", 
+             borderwidth=1, width=20, anchor="w").pack(side=tk.LEFT, padx=10, pady=3)
+    tk.Label(frame_leyenda_contenido, text="Degiro, Fondo BBVA, Ocean Broker", 
+             font=("Arial", 9), bg="lightyellow").pack(side=tk.LEFT, padx=3, pady=3)
+    
+    # --- FRAME PRINCIPAL CON SCROLL VERTICAL ---
+    frame_principal_scroll = tk.Frame(ventana)
+    frame_principal_scroll.pack(fill=tk.BOTH, expand=True, padx=10, pady=8)
+    
+    # Canvas con scrollbar vertical
+    canvas_principal = tk.Canvas(frame_principal_scroll, bg="white", highlightthickness=0)
+    scrollbar_vertical = tk.Scrollbar(frame_principal_scroll, orient="vertical", command=canvas_principal.yview)
+    frame_tablas = tk.Frame(canvas_principal, bg="white")
+    
+    canvas_principal.create_window((0, 0), window=frame_tablas, anchor="nw")
+    canvas_principal.configure(yscrollcommand=scrollbar_vertical.set)
+    
+    canvas_principal.pack(side="left", fill=tk.BOTH, expand=True)
+    scrollbar_vertical.pack(side="right", fill="y")
+    
+    # Bind mouse wheel para scroll vertical
+    def _on_mousewheel(event):
+        canvas_principal.yview_scroll(int(-1*(event.delta/120)), "units")
+    
+    canvas_principal.bind_all("<MouseWheel>", _on_mousewheel)
+    
+    # Diccionario para almacenar las entradas
+    entries = {}
+    
+    def crear_tabla(tipo_cuenta, columnas, color_header, color_subheader):
+        """Crea una tabla para un tipo de cuenta"""
+        frame_tabla_grupo = tk.LabelFrame(frame_tablas, text=tipo_cuenta, 
+                                           font=("Arial", 11, "bold"), 
+                                           bg=color_header, padx=8, pady=8)
+        frame_tabla_grupo.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Frame para la tabla sin scroll horizontal
+        frame_tabla = tk.Frame(frame_tabla_grupo)
+        frame_tabla.pack(fill=tk.X)
+        
+        # Encabezado con años
+        tk.Label(frame_tabla, text="Mes", font=("Arial", 9, "bold"), 
+                 bg="lightgray", relief="solid", borderwidth=1, width=10).grid(row=0, column=0, sticky="ew", padx=1, pady=1)
+        
+        for col_idx, columna in enumerate(columnas, start=1):
+            tk.Label(frame_tabla, text=columna, font=("Arial", 8, "bold"), 
+                     bg=color_subheader, relief="solid", borderwidth=1, width=8).grid(row=0, column=col_idx, sticky="ew", padx=1, pady=1)
+        
+        # Filas para cada mes
+        for row_idx, mes in enumerate(meses, start=1):
+            tk.Label(frame_tabla, text=mes, font=("Arial", 9, "bold"), 
+                     bg="lightgray", relief="solid", borderwidth=1, width=10).grid(row=row_idx, column=0, sticky="ew", padx=1, pady=1)
+            
+            entries[mes] = entries.get(mes, {})
+            
+            # Campos para esta tabla
+            for col_idx, columna in enumerate(columnas, start=1):
+                valor = patrimonio_data.get(mes, {}).get(columna, "")
+                entry = tk.Entry(frame_tabla, width=8, justify="center", font=("Arial", 8))
+                entry.insert(0, str(valor))
+                entry.grid(row=row_idx, column=col_idx, sticky="ew", padx=1, pady=1)
+                entries[mes][columna] = entry
+    
+    # Crear las tres tablas
+    cc_columnas = [f"cc{ano}" for ano in anos]
+    crear_tabla("CUENTAS CORRIENTES", cc_columnas, "lightblue", "lightskyblue")
+    
+    pp_columnas = [f"PP{ano}" for ano in anos]
+    crear_tabla("PLANES DE PENSIONES", pp_columnas, "lightgreen", "palegreen")
+    
+    inv_columnas = [f"INV{ano}" for ano in anos]
+    crear_tabla("INVERSIONES", inv_columnas, "lightyellow", "khaki")
+    
+    # --- TABLA DE TOTALES POR AÑO ---
+    frame_totales_grupo = tk.LabelFrame(frame_tablas, text="TOTALES POR AÑO", 
+                                         font=("Arial", 11, "bold"), 
+                                         bg="lightyellow", padx=8, pady=8)
+    frame_totales_grupo.pack(fill=tk.X, padx=5, pady=5)
+    
+    frame_totales = tk.Frame(frame_totales_grupo)
+    frame_totales.pack(fill=tk.X)
+    
+    # Encabezado con años
+    tk.Label(frame_totales, text="Año", font=("Arial", 9, "bold"), 
+             bg="lightgray", relief="solid", borderwidth=1, width=15).grid(row=0, column=0, sticky="ew", padx=1, pady=1)
+    
+    for col_idx, ano in enumerate(anos, start=1):
+        tk.Label(frame_totales, text=str(ano), font=("Arial", 8, "bold"), 
+                 bg="orange", relief="solid", borderwidth=1, width=8).grid(row=0, column=col_idx, sticky="ew", padx=1, pady=1)
+    
+    # Fila de totales
+    tk.Label(frame_totales, text="Total", font=("Arial", 9, "bold"), 
+             bg="orange", relief="solid", borderwidth=1, width=15).grid(row=1, column=0, sticky="ew", padx=1, pady=1)
+    
+    totales_labels = {}
+    for col_idx, ano in enumerate(anos, start=1):
+        total_label = tk.Label(frame_totales, text="0.00", font=("Arial", 8), 
+                               bg="lightyellow", relief="solid", borderwidth=1, width=8)
+        total_label.grid(row=1, column=col_idx, sticky="ew", padx=1, pady=1)
+        totales_labels[ano] = total_label
+    
+    # Diccionarios para guardar los labels de porcentajes
+    porcentajes_labels = {
+        "% cc Enero": {},
+        "% cc Diciembre": {},
+        "% PP Enero": {},
+        "% PP Diciembre": {},
+        "% INV Enero": {},
+        "% INV Diciembre": {}
+    }
+    
+    # Crear filas para los porcentajes
+    row_idx = 2
+    for metrica in porcentajes_labels.keys():
+        tk.Label(frame_totales, text=metrica, font=("Arial", 9, "bold"), 
+                 bg="lightyellow", relief="solid", borderwidth=1, width=15).grid(row=row_idx, column=0, sticky="ew", padx=1, pady=1)
+        
+        for col_idx, ano in enumerate(anos, start=1):
+            pct_label = tk.Label(frame_totales, text="0.00%", font=("Arial", 8), 
+                                bg="white", relief="solid", borderwidth=1, width=8)
+            pct_label.grid(row=row_idx, column=col_idx, sticky="ew", padx=1, pady=1)
+            porcentajes_labels[metrica][ano] = pct_label
+        
+        row_idx += 1
+    
+    def actualizar_totales_anuales():
+        """Actualiza los totales anuales y porcentajes basados en los valores de las tablas"""
+        for ano in anos:
+            total = 0.0
+            
+            # Sumar CC + PP + INV para este año
+            cc_col = f"cc{ano}"
+            pp_col = f"PP{ano}"
+            inv_col = f"INV{ano}"
+            
+            valores_meses = {}
+            for mes in meses:
+                valores_meses[mes] = {"cc": 0.0, "pp": 0.0, "inv": 0.0}
+                
+                if mes in entries:
+                    try:
+                        if cc_col in entries[mes]:
+                            valor_cc = float(entries[mes][cc_col].get() or 0)
+                            valores_meses[mes]["cc"] = valor_cc
+                            total += valor_cc
+                    except ValueError:
+                        pass
+                    try:
+                        if pp_col in entries[mes]:
+                            valor_pp = float(entries[mes][pp_col].get() or 0)
+                            valores_meses[mes]["pp"] = valor_pp
+                            total += valor_pp
+                    except ValueError:
+                        pass
+                    try:
+                        if inv_col in entries[mes]:
+                            valor_inv = float(entries[mes][inv_col].get() or 0)
+                            valores_meses[mes]["inv"] = valor_inv
+                            total += valor_inv
+                    except ValueError:
+                        pass
+            
+            # Actualizar total
+            totales_labels[ano].config(text=f"{total:.2f}")
+            
+            # Calcular y actualizar porcentajes
+            if total > 0:
+                # % cc Enero
+                pct = (valores_meses["Enero"]["cc"] / total) * 100
+                porcentajes_labels["% cc Enero"][ano].config(text=f"{pct:.2f}%")
+                
+                # % cc Diciembre
+                pct = (valores_meses["Diciembre"]["cc"] / total) * 100
+                porcentajes_labels["% cc Diciembre"][ano].config(text=f"{pct:.2f}%")
+                
+                # % PP Enero
+                pct = (valores_meses["Enero"]["pp"] / total) * 100
+                porcentajes_labels["% PP Enero"][ano].config(text=f"{pct:.2f}%")
+                
+                # % PP Diciembre
+                pct = (valores_meses["Diciembre"]["pp"] / total) * 100
+                porcentajes_labels["% PP Diciembre"][ano].config(text=f"{pct:.2f}%")
+                
+                # % INV Enero
+                pct = (valores_meses["Enero"]["inv"] / total) * 100
+                porcentajes_labels["% INV Enero"][ano].config(text=f"{pct:.2f}%")
+                
+                # % INV Diciembre
+                pct = (valores_meses["Diciembre"]["inv"] / total) * 100
+                porcentajes_labels["% INV Diciembre"][ano].config(text=f"{pct:.2f}%")
+            else:
+                # Si el total es 0, mostrar 0.00%
+                for metrica in porcentajes_labels.keys():
+                    porcentajes_labels[metrica][ano].config(text="0.00%")
+    
+    # Vincular actualización de totales a cambios en las entradas
+    def crear_actualizador_totales(inputs):
+        """Crea una función para actualizar los totales cuando cambian los campos"""
+        def actualizar(*args):
+            actualizar_totales_anuales()
+        return actualizar
+    
+    for mes in entries:
+        for columna in entries[mes]:
+            entries[mes][columna].bind('<KeyRelease>', crear_actualizador_totales(entries))
+    
+    # Actualizar totales inicialmente
+    actualizar_totales_anuales()
+    
+    # Actualizar scrollregion del canvas principal
+    frame_tablas.bind("<Configure>", lambda e: canvas_principal.configure(scrollregion=canvas_principal.bbox("all")))
+    
+    # Frame de botones
+    frame_botones = tk.Frame(ventana)
+    frame_botones.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+    
+    def guardar_patrimonio_datos():
+        """Guarda los datos del patrimonio"""
+        datos_nuevos = {}
+        todas_columnas = cc_columnas + pp_columnas + inv_columnas
+        
+        for mes in meses:
+            datos_nuevos[mes] = {}
+            for columna in todas_columnas:
+                if mes in entries and columna in entries[mes]:
+                    valor_texto = entries[mes][columna].get().strip()
+                    if valor_texto:
+                        try:
+                            datos_nuevos[mes][columna] = float(valor_texto)
+                        except ValueError:
+                            entries[mes][columna].config(bg="red")
+                            messagebox.showerror("Error", f"El valor en {mes} - {columna} no es un número válido.")
+                            return
+                        entries[mes][columna].config(bg="white")
+                    else:
+                        datos_nuevos[mes][columna] = ""
+        
+        guardar_patrimonio(datos_nuevos)
+        messagebox.showinfo("Éxito", "Datos de patrimonio guardados correctamente.")
+    
+    tk.Button(frame_botones, text="Guardar Patrimonio", command=guardar_patrimonio_datos,
+             bg="green", fg="black", font=("Arial", 11, "bold"), height=2, width=30).pack(side=tk.RIGHT, padx=5)
+
+
+
 def iniciar_gui():
     root = tk.Tk()
     root.title("Gestor de Cartera AAF")
-    root.geometry("400x400")
+    root.geometry("600x400")
 
     # Forzar la ventana principal a estar en primer plano al iniciar
     root.attributes('-topmost', True)
@@ -796,14 +1201,23 @@ def iniciar_gui():
 
     tk.Label(root, text="Gestor de Cartera AAF", font=("Arial", 18, "bold")).pack(pady=30)
 
-    tk.Button(root, text="Añadir Nuevos Activos", command=ventana_agregar_activos,
-             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(pady=10)
+    frame_anadir = tk.Frame(root)
+    frame_anadir.pack(pady=10)
+
+    tk.Button(frame_anadir, text="Añadir Nuevos Activos", command=ventana_agregar_activos,
+             width=25, height=2, font=("Arial", 12), bg="lightblue").pack(side=tk.LEFT, padx=10)
+             
+    tk.Button(frame_anadir, text="Añadir Nuevo Saldo Mensual", command=ventana_agregar_saldo_mensual,
+             width=25, height=2, font=("Arial", 12), bg="lightskyblue").pack(side=tk.LEFT, padx=10)
 
     tk.Button(root, text="Ver Cartera", command=ventana_ver_cartera,
              width=25, height=2, font=("Arial", 12), bg="lightgreen").pack(pady=10)
 
     tk.Button(root, text="Ver Dividendos", command=ventana_dividendos,
              width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
+
+    tk.Button(root, text="Patrimonio", command=ventana_patrimonio,
+             width=25, height=2, font=("Arial", 12), bg="lightsteelblue").pack(pady=10)
 
     tk.Button(root, text="Saldos Mensuales", command=ventana_saldos_mensuales,
              width=25, height=2, font=("Arial", 12), bg="lightcoral").pack(pady=10)
