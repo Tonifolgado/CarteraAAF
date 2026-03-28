@@ -973,9 +973,9 @@ def ventana_patrimonio():
     # Diccionario para almacenar las entradas
     entries = {}
     
-    def crear_tabla(tipo_cuenta, columnas, color_header, color_subheader):
+    def crear_tabla(parent_frame, tipo_cuenta, columnas, color_header, color_subheader):
         """Crea una tabla para un tipo de cuenta"""
-        frame_tabla_grupo = tk.LabelFrame(frame_tablas, text=tipo_cuenta, 
+        frame_tabla_grupo = tk.LabelFrame(parent_frame, text=tipo_cuenta, 
                                            font=("Arial", 11, "bold"), 
                                            bg=color_header, padx=8, pady=8)
         frame_tabla_grupo.pack(fill=tk.X, padx=5, pady=5)
@@ -1007,21 +1007,55 @@ def ventana_patrimonio():
                 entry.grid(row=row_idx, column=col_idx, sticky="ew", padx=1, pady=1)
                 entries[mes][columna] = entry
     
+    # Layout en dos columnas principales para evitar separación vertical indeseada
+    frame_columna_izq = tk.Frame(frame_tablas, bg="white")
+    frame_columna_izq.pack(side=tk.LEFT, fill=tk.Y, anchor="nw", padx=5)
+    
+    frame_columna_der = tk.Frame(frame_tablas, bg="white")
+    frame_columna_der.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, anchor="nw", padx=5)
+    
+    # Contenedores de la columna izquierda (Tablas apiladas verticalmente)
+    frame_cc_container = tk.Frame(frame_columna_izq, bg="white")
+    frame_cc_container.pack(fill=tk.X, anchor="nw")
+    
+    frame_pp_container = tk.Frame(frame_columna_izq, bg="white")
+    frame_pp_container.pack(fill=tk.X, anchor="nw")
+    
+    frame_inv_container = tk.Frame(frame_columna_izq, bg="white")
+    frame_inv_container.pack(fill=tk.X, anchor="nw")
+    
+    # Contenedores de la columna derecha (Gráfico y Totales apilados verticalmente)
+    frame_chart_container = tk.Frame(frame_columna_der, bg="white")
+    frame_chart_container.pack(fill=tk.X, anchor="nw")
+    
+    frame_totales_container = tk.Frame(frame_columna_der, bg="white")
+    frame_totales_container.pack(fill=tk.X, anchor="nw")
+    
+    fig_patrimonio, ax_patrimonio = plt.subplots(figsize=(4, 3))
+    canvas_patrimonio = FigureCanvasTkAgg(fig_patrimonio, master=frame_chart_container)
+    canvas_patrimonio.get_tk_widget().pack(anchor="nw")
+
+    # Etiqueta destacada para el Total de Enero 2026
+    lbl_total_destacado = tk.Label(frame_chart_container, text="Total Enero 2026: 0,00 €", font=("Arial", 16, "bold"), fg="blue", bg="white")
+    lbl_total_destacado.pack(pady=10, anchor="nw")
+
+    ano_grafico = 2025
+
     # Crear las tres tablas
     cc_columnas = [f"cc{ano}" for ano in anos]
-    crear_tabla("CUENTAS CORRIENTES", cc_columnas, "lightblue", "lightskyblue")
+    crear_tabla(frame_cc_container, "CUENTAS CORRIENTES", cc_columnas, "lightblue", "lightskyblue")
     
     pp_columnas = [f"PP{ano}" for ano in anos]
-    crear_tabla("PLANES DE PENSIONES", pp_columnas, "lightgreen", "palegreen")
+    crear_tabla(frame_pp_container, "PLANES DE PENSIONES", pp_columnas, "lightgreen", "palegreen")
     
     inv_columnas = [f"INV{ano}" for ano in anos]
-    crear_tabla("INVERSIONES", inv_columnas, "lightyellow", "khaki")
+    crear_tabla(frame_inv_container, "INVERSIONES", inv_columnas, "lightyellow", "khaki")
     
     # --- TABLA DE TOTALES POR AÑO ---
-    frame_totales_grupo = tk.LabelFrame(frame_tablas, text="TOTALES POR AÑO", 
+    frame_totales_grupo = tk.LabelFrame(frame_totales_container, text="TOTALES POR AÑO", 
                                          font=("Arial", 11, "bold"), 
                                          bg="lightyellow", padx=8, pady=8)
-    frame_totales_grupo.pack(fill=tk.X, padx=5, pady=5)
+    frame_totales_grupo.pack(fill=tk.X, padx=5, pady=5, anchor="nw")
     
     frame_totales = tk.Frame(frame_totales_grupo)
     frame_totales.pack(fill=tk.X)
@@ -1034,35 +1068,55 @@ def ventana_patrimonio():
         tk.Label(frame_totales, text=str(ano), font=("Arial", 8, "bold"), 
                  bg="orange", relief="solid", borderwidth=1, width=8).grid(row=0, column=col_idx, sticky="ew", padx=1, pady=1)
     
-    # Fila de totales
-    tk.Label(frame_totales, text="Total", font=("Arial", 9, "bold"), 
+    # Fila de totales Enero
+    tk.Label(frame_totales, text="Total Enero", font=("Arial", 9, "bold"), 
              bg="orange", relief="solid", borderwidth=1, width=15).grid(row=1, column=0, sticky="ew", padx=1, pady=1)
     
-    totales_labels = {}
+    totales_enero_labels = {}
     for col_idx, ano in enumerate(anos, start=1):
-        total_label = tk.Label(frame_totales, text="0.00", font=("Arial", 8), 
+        total_label = tk.Label(frame_totales, text="0.00", font=("Arial", 8, "bold"), 
                                bg="lightyellow", relief="solid", borderwidth=1, width=8)
         total_label.grid(row=1, column=col_idx, sticky="ew", padx=1, pady=1)
-        totales_labels[ano] = total_label
+        totales_enero_labels[ano] = total_label
+        
+    # Fila de totales Diciembre
+    tk.Label(frame_totales, text="Total Diciembre", font=("Arial", 9, "bold"), 
+             bg="orange", relief="solid", borderwidth=1, width=15).grid(row=2, column=0, sticky="ew", padx=1, pady=1)
+    
+    totales_diciembre_labels = {}
+    for col_idx, ano in enumerate(anos, start=1):
+        total_label = tk.Label(frame_totales, text="0.00", font=("Arial", 8, "bold"), 
+                               bg="lightyellow", relief="solid", borderwidth=1, width=8)
+        total_label.grid(row=2, column=col_idx, sticky="ew", padx=1, pady=1)
+        totales_diciembre_labels[ano] = total_label
     
     # Diccionarios para guardar los labels de porcentajes
     porcentajes_labels = {
         "% cc Enero": {},
+        "Cant. cc Enero": {},
         "% cc Diciembre": {},
+        "Cant. cc Diciembre": {},
         "% PP Enero": {},
+        "Cant. PP Enero": {},
         "% PP Diciembre": {},
+        "Cant. PP Diciembre": {},
         "% INV Enero": {},
-        "% INV Diciembre": {}
+        "Cant. INV Enero": {},
+        "% INV Diciembre": {},
+        "Cant. INV Diciembre": {}
     }
     
     # Crear filas para los porcentajes
-    row_idx = 2
+    row_idx = 3
     for metrica in porcentajes_labels.keys():
-        tk.Label(frame_totales, text=metrica, font=("Arial", 9, "bold"), 
-                 bg="lightyellow", relief="solid", borderwidth=1, width=15).grid(row=row_idx, column=0, sticky="ew", padx=1, pady=1)
+        font_metrica = ("Arial", 8) if "Cant." in metrica else ("Arial", 9, "bold")
+        bg_metrica = "white" if "Cant." in metrica else "lightyellow"
+        
+        tk.Label(frame_totales, text=metrica, font=font_metrica, 
+                 bg=bg_metrica, relief="solid", borderwidth=1, width=15).grid(row=row_idx, column=0, sticky="ew", padx=1, pady=1)
         
         for col_idx, ano in enumerate(anos, start=1):
-            pct_label = tk.Label(frame_totales, text="0.00%", font=("Arial", 8), 
+            pct_label = tk.Label(frame_totales, text="0.00" if "Cant." in metrica else "0.00%", font=("Arial", 8), 
                                 bg="white", relief="solid", borderwidth=1, width=8)
             pct_label.grid(row=row_idx, column=col_idx, sticky="ew", padx=1, pady=1)
             porcentajes_labels[metrica][ano] = pct_label
@@ -1071,9 +1125,10 @@ def ventana_patrimonio():
     
     def actualizar_totales_anuales():
         """Actualiza los totales anuales y porcentajes basados en los valores de las tablas"""
+        valores_grafico_2025 = [0, 0, 0]
+        total_enero_2026 = 0.0
+        
         for ano in anos:
-            total = 0.0
-            
             # Sumar CC + PP + INV para este año
             cc_col = f"cc{ano}"
             pp_col = f"PP{ano}"
@@ -1088,56 +1143,97 @@ def ventana_patrimonio():
                         if cc_col in entries[mes]:
                             valor_cc = float(entries[mes][cc_col].get() or 0)
                             valores_meses[mes]["cc"] = valor_cc
-                            total += valor_cc
                     except ValueError:
                         pass
                     try:
                         if pp_col in entries[mes]:
                             valor_pp = float(entries[mes][pp_col].get() or 0)
                             valores_meses[mes]["pp"] = valor_pp
-                            total += valor_pp
                     except ValueError:
                         pass
                     try:
                         if inv_col in entries[mes]:
                             valor_inv = float(entries[mes][inv_col].get() or 0)
                             valores_meses[mes]["inv"] = valor_inv
-                            total += valor_inv
                     except ValueError:
                         pass
             
-            # Actualizar total
-            totales_labels[ano].config(text=f"{total:.2f}")
+            total_enero = valores_meses["Enero"]["cc"] + valores_meses["Enero"]["pp"] + valores_meses["Enero"]["inv"]
+            total_diciembre = valores_meses["Diciembre"]["cc"] + valores_meses["Diciembre"]["pp"] + valores_meses["Diciembre"]["inv"]
             
-            # Calcular y actualizar porcentajes
-            if total > 0:
-                # % cc Enero
-                pct = (valores_meses["Enero"]["cc"] / total) * 100
-                porcentajes_labels["% cc Enero"][ano].config(text=f"{pct:.2f}%")
+            if ano == ano_grafico:
+                valores_grafico_2025 = [
+                    valores_meses["Diciembre"]["cc"],
+                    valores_meses["Diciembre"]["pp"],
+                    valores_meses["Diciembre"]["inv"]
+                ]
+            
+            if ano == 2026:
+                total_enero_2026 = total_enero
+
+            # Actualizar totales
+            totales_enero_labels[ano].config(text=f"{total_enero:.2f}")
+            totales_diciembre_labels[ano].config(text=f"{total_diciembre:.2f}")
+            
+            # Calcular y actualizar porcentajes Enero
+            if total_enero > 0:
+                pct_cc_ene = (valores_meses["Enero"]["cc"] / total_enero) * 100
+                porcentajes_labels["% cc Enero"][ano].config(text=f"{pct_cc_ene:.2f}%")
+                porcentajes_labels["Cant. cc Enero"][ano].config(text=f"{valores_meses['Enero']['cc']:.2f}")
                 
-                # % cc Diciembre
-                pct = (valores_meses["Diciembre"]["cc"] / total) * 100
-                porcentajes_labels["% cc Diciembre"][ano].config(text=f"{pct:.2f}%")
+                pct_pp_ene = (valores_meses["Enero"]["pp"] / total_enero) * 100
+                porcentajes_labels["% PP Enero"][ano].config(text=f"{pct_pp_ene:.2f}%")
+                porcentajes_labels["Cant. PP Enero"][ano].config(text=f"{valores_meses['Enero']['pp']:.2f}")
                 
-                # % PP Enero
-                pct = (valores_meses["Enero"]["pp"] / total) * 100
-                porcentajes_labels["% PP Enero"][ano].config(text=f"{pct:.2f}%")
-                
-                # % PP Diciembre
-                pct = (valores_meses["Diciembre"]["pp"] / total) * 100
-                porcentajes_labels["% PP Diciembre"][ano].config(text=f"{pct:.2f}%")
-                
-                # % INV Enero
-                pct = (valores_meses["Enero"]["inv"] / total) * 100
-                porcentajes_labels["% INV Enero"][ano].config(text=f"{pct:.2f}%")
-                
-                # % INV Diciembre
-                pct = (valores_meses["Diciembre"]["inv"] / total) * 100
-                porcentajes_labels["% INV Diciembre"][ano].config(text=f"{pct:.2f}%")
+                pct_inv_ene = (valores_meses["Enero"]["inv"] / total_enero) * 100
+                porcentajes_labels["% INV Enero"][ano].config(text=f"{pct_inv_ene:.2f}%")
+                porcentajes_labels["Cant. INV Enero"][ano].config(text=f"{valores_meses['Enero']['inv']:.2f}")
             else:
-                # Si el total es 0, mostrar 0.00%
-                for metrica in porcentajes_labels.keys():
-                    porcentajes_labels[metrica][ano].config(text="0.00%")
+                porcentajes_labels["% cc Enero"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. cc Enero"][ano].config(text="0.00")
+                porcentajes_labels["% PP Enero"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. PP Enero"][ano].config(text="0.00")
+                porcentajes_labels["% INV Enero"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. INV Enero"][ano].config(text="0.00")
+                
+            # Calcular y actualizar porcentajes Diciembre
+            if total_diciembre > 0:
+                pct_cc_dic = (valores_meses["Diciembre"]["cc"] / total_diciembre) * 100
+                porcentajes_labels["% cc Diciembre"][ano].config(text=f"{pct_cc_dic:.2f}%")
+                porcentajes_labels["Cant. cc Diciembre"][ano].config(text=f"{valores_meses['Diciembre']['cc']:.2f}")
+                
+                pct_pp_dic = (valores_meses["Diciembre"]["pp"] / total_diciembre) * 100
+                porcentajes_labels["% PP Diciembre"][ano].config(text=f"{pct_pp_dic:.2f}%")
+                porcentajes_labels["Cant. PP Diciembre"][ano].config(text=f"{valores_meses['Diciembre']['pp']:.2f}")
+                
+                pct_inv_dic = (valores_meses["Diciembre"]["inv"] / total_diciembre) * 100
+                porcentajes_labels["% INV Diciembre"][ano].config(text=f"{pct_inv_dic:.2f}%")
+                porcentajes_labels["Cant. INV Diciembre"][ano].config(text=f"{valores_meses['Diciembre']['inv']:.2f}")
+            else:
+                porcentajes_labels["% cc Diciembre"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. cc Diciembre"][ano].config(text="0.00")
+                porcentajes_labels["% PP Diciembre"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. PP Diciembre"][ano].config(text="0.00")
+                porcentajes_labels["% INV Diciembre"][ano].config(text="0.00%")
+                porcentajes_labels["Cant. INV Diciembre"][ano].config(text="0.00")
+                
+        # Actualizar gráfico de sectores
+        ax_patrimonio.clear()
+        labels = ['CC', 'PP', 'INV']
+        colores = ['lightblue', 'lightgreen', 'lightyellow']
+        if sum(valores_grafico_2025) > 0:
+            def formato_autopct(pct):
+                total = sum(valores_grafico_2025)
+                val = (pct * total) / 100.0
+                val_str = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                return f"{pct:.1f}%\n{val_str} €"
+            ax_patrimonio.pie(valores_grafico_2025, labels=labels, autopct=formato_autopct, startangle=140, colors=colores, textprops={'fontsize': 9})
+        ax_patrimonio.set_title(f'Distribución Diciembre {ano_grafico}', fontsize=10, fontweight='bold')
+        fig_patrimonio.tight_layout()
+        canvas_patrimonio.draw()
+        
+        # Actualizar etiqueta de Total Enero 2026 con formato de millares (ej. 10.000,00 €)
+        lbl_total_destacado.config(text=f"Total Enero 2026: {total_enero_2026:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
     
     # Vincular actualización de totales a cambios en las entradas
     def crear_actualizador_totales(inputs):
@@ -1216,10 +1312,10 @@ def iniciar_gui():
     tk.Button(root, text="Ver Dividendos", command=ventana_dividendos,
              width=25, height=2, font=("Arial", 12), bg="lightyellow").pack(pady=10)
 
-    tk.Button(root, text="Patrimonio", command=ventana_patrimonio,
-             width=25, height=2, font=("Arial", 12), bg="lightsteelblue").pack(pady=10)
-
     tk.Button(root, text="Saldos Mensuales", command=ventana_saldos_mensuales,
              width=25, height=2, font=("Arial", 12), bg="lightcoral").pack(pady=10)
+
+    tk.Button(root, text="Patrimonio", command=ventana_patrimonio,
+             width=25, height=2, font=("Arial", 12), bg="lightsteelblue").pack(pady=10)
 
     root.mainloop()
