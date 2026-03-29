@@ -1035,8 +1035,8 @@ def ventana_patrimonio():
     canvas_patrimonio = FigureCanvasTkAgg(fig_patrimonio, master=frame_chart_container)
     canvas_patrimonio.get_tk_widget().pack(anchor="nw")
 
-    # Etiqueta destacada para el Total de Enero 2026
-    lbl_total_destacado = tk.Label(frame_chart_container, text="Total Enero 2026: 0,00 €", font=("Arial", 16, "bold"), fg="blue", bg="white")
+    # Etiqueta destacada para el Total del último mes de 2026
+    lbl_total_destacado = tk.Label(frame_chart_container, text="Total 2026: 0,00 €", font=("Arial", 16, "bold"), fg="blue", bg="white")
     lbl_total_destacado.pack(pady=10, anchor="nw")
 
     ano_grafico = 2025
@@ -1126,7 +1126,8 @@ def ventana_patrimonio():
     def actualizar_totales_anuales():
         """Actualiza los totales anuales y porcentajes basados en los valores de las tablas"""
         valores_grafico_2025 = [0, 0, 0]
-        total_enero_2026 = 0.0
+        ultimo_mes_2026 = "Enero"
+        total_ultimo_mes_2026 = 0.0
         
         for ano in anos:
             # Sumar CC + PP + INV para este año
@@ -1169,7 +1170,11 @@ def ventana_patrimonio():
                 ]
             
             if ano == 2026:
-                total_enero_2026 = total_enero
+                for mes_iter in meses:
+                    total_mes_iter = valores_meses[mes_iter]["cc"] + valores_meses[mes_iter]["pp"] + valores_meses[mes_iter]["inv"]
+                    if total_mes_iter > 0:
+                        ultimo_mes_2026 = mes_iter
+                        total_ultimo_mes_2026 = total_mes_iter
 
             # Actualizar totales
             totales_enero_labels[ano].config(text=f"{total_enero:.2f}")
@@ -1232,8 +1237,8 @@ def ventana_patrimonio():
         fig_patrimonio.tight_layout()
         canvas_patrimonio.draw()
         
-        # Actualizar etiqueta de Total Enero 2026 con formato de millares (ej. 10.000,00 €)
-        lbl_total_destacado.config(text=f"Total Enero 2026: {total_enero_2026:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+        # Actualizar etiqueta de Total con el último mes de 2026 con formato de millares
+        lbl_total_destacado.config(text=f"Total {ultimo_mes_2026} 2026: {total_ultimo_mes_2026:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
     
     # Vincular actualización de totales a cambios en las entradas
     def crear_actualizador_totales(inputs):
