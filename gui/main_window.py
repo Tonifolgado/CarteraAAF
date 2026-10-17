@@ -383,6 +383,11 @@ def ventana_ver_cartera():
             tk.Label(frame_brokers_cant, text=f"{broker}: {total}", font=("Arial", 10)).pack(anchor="w", padx=10, pady=1)
 
 ANOS_DIVIDENDOS = [2022, 2023, 2024, 2025, 2026]
+ANCHO_TITULO_DIVIDENDOS = 20
+
+def titulo_corto(activo, ancho=ANCHO_TITULO_DIVIDENDOS):
+    titulo = activo.titulo or activo.simbolo
+    return titulo if len(titulo) <= ancho else titulo[:ancho - 1].rstrip() + "…"
 
 def cargar_dividendos():
     try:
@@ -455,7 +460,7 @@ def ventana_dividendos():
     row_idx = 1
     for activo in sorted(activos_con_dividendos, key=lambda x: x.simbolo):
         simbolo = activo.simbolo
-        tk.Label(frame_resumen, text=simbolo, anchor="w", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=0, sticky="ew")
+        tk.Label(frame_resumen, text=titulo_corto(activo), anchor="w", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=0, sticky="ew")
 
         for i, ano in enumerate(anos):
             valor = totales_por_activo_ano.get(simbolo, {}).get(ano, 0)
@@ -491,7 +496,7 @@ def ventana_dividendos():
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        tk.Label(frame_tabla, text="Activo", borderwidth=1, relief="solid", width=15,
+        tk.Label(frame_tabla, text="Activo", borderwidth=1, relief="solid", width=ANCHO_TITULO_DIVIDENDOS,
                 bg="yellow", fg="blue", font=("Arial", 12, "bold")).grid(row=0, column=0)
 
         for i, mes in enumerate(meses):
@@ -546,7 +551,7 @@ def ventana_dividendos():
 
         for index, activo in enumerate(activos_con_dividendos):
             simbolo = activo.simbolo
-            tk.Label(frame_tabla, text=simbolo, borderwidth=1, relief="solid", width=15,
+            tk.Label(frame_tabla, text=titulo_corto(activo), borderwidth=1, relief="solid", width=ANCHO_TITULO_DIVIDENDOS,
                     anchor="w").grid(row=index+1, column=0)
 
             entries[simbolo] = []
@@ -567,7 +572,7 @@ def ventana_dividendos():
             tk.Label(frame_tabla, textvariable=totales_fila[simbolo], borderwidth=1, relief="solid",
                     width=10, anchor="center", bg="lightgray").grid(row=index+1, column=13)
 
-        tk.Label(frame_tabla, text="TOTAL", borderwidth=1, relief="solid", width=15,
+        tk.Label(frame_tabla, text="TOTAL", borderwidth=1, relief="solid", width=ANCHO_TITULO_DIVIDENDOS,
                 bg="orange", fg="blue", font=("Arial", 12, "bold")).grid(row=len(activos_con_dividendos)+1, column=0)
 
         for mes_idx in range(12):
