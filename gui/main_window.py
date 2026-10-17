@@ -406,7 +406,8 @@ def ventana_dividendos():
     ventana.geometry("900x900")
 
     cartera = portfolio.get_all_assets()
-    activos_con_dividendos = [asset for asset in cartera if asset.dividendos == 'Sí']
+    activos_con_dividendos = sorted((asset for asset in cartera if asset.dividendos == 'Sí'),
+                                    key=lambda x: (x.titulo or x.simbolo).casefold())
 
     if not activos_con_dividendos:
         tk.Label(ventana, text="No hay activos con dividendos.", font=("Arial", 14)).pack(pady=50)
@@ -458,7 +459,7 @@ def ventana_dividendos():
         tk.Label(frame_resumen, text=header, font=header_font, bg="lightblue", relief="solid", borderwidth=1, padx=5, pady=2).grid(row=0, column=i, sticky="ew")
 
     row_idx = 1
-    for activo in sorted(activos_con_dividendos, key=lambda x: x.simbolo):
+    for activo in activos_con_dividendos:
         simbolo = activo.simbolo
         tk.Label(frame_resumen, text=titulo_corto(activo), anchor="w", relief="solid", borderwidth=1, padx=5).grid(row=row_idx, column=0, sticky="ew")
 
