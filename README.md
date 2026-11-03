@@ -1,49 +1,34 @@
-# Gestor de Cartera AAF
+# Gestor de Cartera AAF (Aplicación Web en TypeScript)
 
-**Gestor de Cartera AAF** es una aplicación de escritorio desarrollada en Python para facilitar la gestión, seguimiento y análisis de tu cartera de inversiones personal y el cobro de dividendos.
+**Gestor de Cartera AAF** ha sido convertido en una aplicación web moderna en **TypeScript + React + Vite**, manteniendo el 100% de las funcionalidades, cálculos, tablas, colores, gráficos y persistencia de datos (`data/cartera.json`, `data/dividendos.json`, `data/patrimonio.json` y `BalancesMensuales.csv`) de la aplicación original en Python.
 
-## Estructura de Ficheros
+## Cómo Ejecutar la Aplicación Web (TypeScript)
 
-El proyecto ha evolucionado a una arquitectura modular, separando la interfaz gráfica, la lógica de negocio, los modelos de datos y los servicios externos:
-
-*   **`data/`**: Carpeta que contiene los datos persistentes de la aplicación.
-    *   `cartera.json`: Archivo JSON con la lista y detalles de los activos de la cartera.
-    *   `dividendos.json`: Archivo JSON que almacena el historial de dividendos cobrados por año y mes.
-*   **`gui/`**: Contiene la lógica de la interfaz visual.
-    *   `main_window.py`: Define la interfaz gráfica de usuario (GUI) principal y sus vistas usando `Tkinter`.
-*   **`models/`**: Contiene las clases que representan la lógica de negocio.
-    *   `asset.py`: Define la clase `Asset` (activo financiero y sus propiedades).
-    *   `portfolio.py`: Define la clase `Portfolio`, encargada de interactuar con el archivo JSON y manejar las operaciones de la cartera.
-*   **`services/`**: Contiene los servicios de conexión externa.
-    *   `market_data.py`: Módulo de conexión con la API de Yahoo Finance (`yfinance`) para obtener precios actuales del mercado en tiempo real.
-*   **`gestor_cartera.py`**: Script principal (entry point) que inicializa y arranca la aplicación.
-
-## Lógica del Código
-
-El código está organizado para separar responsabilidades (Separation of Concerns):
-
-1.  **Modelos (`models/`)**: La clase `Asset` se utiliza para representar posiciones financieras en memoria. `Portfolio` agrupa estos activos, proveyendo métodos para añadir, editar, eliminar (CRUD) y guardarlos transparentemente en `cartera.json`.
-2.  **Interfaz Gráfica (`gui/main_window.py`)**: Construida de forma nativa con **Tkinter**. Esta capa captura los inputs del usuario y delega el procesamiento de la información a la clase `Portfolio`. Utiliza **Pandas** para convertir los datos de los activos en un DataFrame, ordenarlos y agruparlos antes de renderizarlos en la tabla principal. Asimismo, usa **Matplotlib** para dibujar de manera integrada los gráficos de barras y distribución sectorial (tarta).
-3.  **Servicios (`services/market_data.py`)**: Centraliza la obtención de precios del mercado de valores con la librería `yfinance`, previniendo que la interfaz gráfica realice peticiones HTTP directamente y centralizando el manejo de errores.
-4.  **Persistencia de Datos**: Se ha optado por utilizar archivos JSON estáticos (`cartera.json` y `dividendos.json`). Los dividendos se actualizan y calculan automáticamente año tras año (2022-2026) a través de los eventos de la interfaz, grabando las entradas a disco bajo demanda.
-
-## Cómo Usar la Aplicación
-
-### 1. Requisitos e Instalación
-Necesitas tener Python 3 instalado en tu sistema. Instala las dependencias necesarias mediante pip:
+### 1. Iniciar el servidor de desarrollo
+Desde la raíz del proyecto ejecuta:
 ```bash
-pip install pandas yfinance matplotlib
+npm run dev
 ```
+La aplicación estará disponible en `http://localhost:3000`.
 
-### 2. Ejecutar la Aplicación
-Inicia la aplicación ejecutando el script principal que lanza la interfaz. Asegúrate de ejecutarlo desde el directorio raíz del proyecto para que las rutas relativas (como la lectura de `data/cartera.json`) funcionen correctamente:
+### 2. Compilar para producción
 ```bash
-python -c "from gui.main_window import iniciar_gui; iniciar_gui()"
+npm run build
+npm run preview
 ```
-*(Si dispones de un script `main.py` en la raíz del proyecto para inicializar la app, también puedes ejecutar directamente `python main.py`)*
 
-### 3. Funcionalidades Principales
-*   **Añadir Nuevos Activos**: Al añadir un nuevo activo, rellena el símbolo del ticker (ej. `AAPL` o `IBE.MC`). El sistema contactará automáticamente a Yahoo Finance para recuperar su precio actual.
-*   **Ver Cartera**: Abre un dashboard interactivo. Podrás revisar el total invertido, el peso de cada activo (%) y resúmenes financieros apoyados por gráficas dinámicas. Desde la propia tabla puedes "Editar" o "Eliminar" posiciones.
-*   **Ver Dividendos**: Utiliza un sistema de pestañas por año (2022-2026). Registra mes a mes los cobros introduciendo el importe en las celdas (que se pintarán de verde). Todo se suma y consolida de forma automática en la pestaña general de "Resumen".
-```
+## Estructura del Proyecto Web (TypeScript)
+
+* **`vite.config.ts`**: Configuración de Vite junto con el plugin de API backend (`/api/cartera`, `/api/dividendos`, `/api/patrimonio`, `/api/saldos`, `/api/market-prices`) que lee y guarda directamente en los ficheros locales de `data/` y `BalancesMensuales.csv`, además de consultar cotizaciones en tiempo real desde Yahoo Finance.
+* **`src/types.ts`**: Modelos e interfaces en TypeScript (`Asset`, `DividendosData`, `PatrimonioData`, `SaldosPorAno`, etc.).
+* **`src/services/api.ts`**: Servicio de comunicación con los endpoints de persistencia en disco (con respaldo automático en `localStorage`) y consulta de precios de mercado.
+* **`src/utils/formatters.ts`**: Utilidades de formateo en euros (`1.234,56 €`), recorte de títulos (`tituloCorto`) y parseo numérico.
+* **`src/components/`**:
+  * `HomeMenu.tsx`: Menú principal con KPIs y acceso directo a los 6 módulos.
+  * `AgregarActivoView.tsx`: Formulario para añadir nuevos activos con consulta automática/manual a Yahoo Finance y cálculo en vivo del precio final con comisión.
+  * `VerCarteraView.tsx`: Tabla completa ordenada por tipo de activo y símbolo, colores por categoría (`ACC`, `ETF`, `PP`, `FON`), edición y eliminación modal, resúmenes por Tipo y Broker (Importe y Acciones) y gráficos de barras y circular.
+  * `DividendosView.tsx`: Pestaña de `Resumen` (con tabla consolidada 2022–2026 y gráfico de evolución anual) y pestañas editables por año (`2022`–`2026`) con resaltado en verde para cobros registrados y guardado en `data/dividendos.json`.
+  * `AgregarSaldoView.tsx`: Registro de nuevos balances mensuales con cálculo en tiempo real del saldo en formato euro español y escritura en `BalancesMensuales.csv`.
+  * `SaldosMensualesView.tsx`: Resumen Anual General (2000–2026), índice rápido `"Ir al año:"` con desplazamiento suave y tablas detalladas por cada año.
+  * `PatrimonioView.tsx`: Gestión de Cuentas Corrientes (`CC`), Planes de Pensiones (`PP`) e Inversiones (`INV`) entre 2020 y 2026, gráfico circular de distribución Diciembre 2025 con importes y porcentajes, total destacado de 2026 y tabla reactiva de `TOTALES POR AÑO`.
+  * `Charts.tsx`: Componentes de gráficos interactivos en SVG (`AssetBarChart` y `AssetPieChart`).
