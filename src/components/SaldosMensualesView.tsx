@@ -1,4 +1,5 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { ArrowUp, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { SaldosPorAno } from '../types';
 
 interface SaldosMensualesViewProps {
@@ -12,6 +13,16 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const yearRefs = useRef<Record<number, HTMLFieldSetElement | null>>({});
+  const [anosPlegados, setAnosPlegados] = useState<Set<number>>(new Set());
+
+  const togglePlegado = (ano: number) => {
+    setAnosPlegados((prev) => {
+      const next = new Set(prev);
+      if (next.has(ano)) next.delete(ano);
+      else next.add(ano);
+      return next;
+    });
+  };
 
   const anosOrdenados = useMemo(() => {
     return Object.keys(datosPorAno)
@@ -44,6 +55,16 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
       granTotalSaldo: gSal
     };
   }, [anosOrdenados, datosPorAno]);
+
+  const plegarTodos = () => setAnosPlegados(new Set(anosOrdenados));
+  const desplegarTodos = () => setAnosPlegados(new Set());
+
+  const irAResumen = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    document
+      .getElementById('resumen-anual-general')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const irAAno = (ano: number) => {
     const targetEl = yearRefs.current[ano];
@@ -80,7 +101,7 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
       </div>
 
       {/* Tabla Resumen Anual General */}
-      <fieldset className="tk-labelframe-large mb-4">
+      <fieldset id="resumen-anual-general" className="tk-labelframe-large mb-4">
         <legend>Resumen Anual General</legend>
         <div className="table-scroll-container resumen-anual-scroll">
           <table className="tk-table">
@@ -144,11 +165,34 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
         </div>
       </div>
 
+      {/* Plegar / desplegar todos los años */}
+      <div className="saldos-pliegue-toolbar">
+        <button
+          type="button"
+          className="btn-secondary saldos-pliegue-btn"
+          onClick={plegarTodos}
+          disabled={anosPlegados.size === anosOrdenados.length}
+        >
+          <ChevronsDownUp size={16} aria-hidden="true" />
+          Plegar todos
+        </button>
+        <button
+          type="button"
+          className="btn-secondary saldos-pliegue-btn"
+          onClick={desplegarTodos}
+          disabled={anosPlegados.size === 0}
+        >
+          <ChevronsUpDown size={16} aria-hidden="true" />
+          Desplegar todos
+        </button>
+      </div>
+
       {/* Contenedor con scroll de todos los años */}
       <div ref={scrollContainerRef} className="saldos-anos-scroll-container">
         {anosOrdenados.map((ano) => {
           const meses = datosPorAno[ano] || [];
           const tot = resumenAnual[ano];
+          const plegado = anosPlegados.has(ano);
 
           return (
             <fieldset
@@ -158,8 +202,29 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
               }}
               className="tk-labelframe-large mb-4"
             >
-              <legend>AÑO {ano}</legend>
-              <table className="tk-table">
+              <legend>
+                <button
+                  type="button"
+                  className="saldos-toggle-ano"
+                  aria-expanded={!plegado}
+                  aria-controls={`saldos-ano-${ano}`}
+                  onClick={() => togglePlegado(ano)}
+                >
+                  {plegado ? (
+                    <ChevronRight size={18} aria-hidden="true" />
+                  ) : (
+                    <ChevronDown size={18} aria-hidden="true" />
+                  )}
+                  AÑO {ano}
+                </button>
+              </legend>
+              <div className="saldos-ano-links">
+                <a href="#resumen-anual-general" className="saldos-link-resumen" onClick={irAResumen}>
+                  <ArrowUp size={14} aria-hidden="true" />
+                  Ir a Resumen Anual General
+                </a>
+              </div>
+              <table className="tk-table" id={`saldos-ano-${ano}`}>
                 <thead>
                   <tr className="tk-header-lightblue">
                     <th className="text-left" style={{ width: '25%' }}>
@@ -177,7 +242,8 @@ export const SaldosMensualesView: React.FC<SaldosMensualesViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {meses.map((mesData, idx) => (
+                  {!plegado &&
+                    meses.map((mesData, idx) => (
                     <tr key={`${ano}-${mesData.mes}-${idx}`}>
                       <td className="text-left">{mesData.mes}</td>
                       <td className="text-right">{mesData.ingresos.toFixed(2)}€</td>

@@ -1427,3 +1427,79 @@ body {
 .modal-header {
   border-bottom-color: var(--aaf-line);
 }
+
+/* Saldos mensuales: plegar/desplegar cada año */
+.saldos-toggle-ano {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0.25rem 0.35rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.saldos-toggle-ano:hover {
+  background: var(--aaf-bg, #f1f5f9);
+}
+
+.saldos-toggle-ano:focus-visible {
+  outline: 2px solid var(--aaf-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+/* Saldos mensuales: enlaces de desplazamiento rápido */
+#resumen-anual-general {
+  scroll-margin-top: 140px;
+}
+
+.saldos-ano-links {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4rem;
+}
+
+.saldos-link-resumen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--aaf-accent-hover, #1d4ed8);
+  text-decoration: none;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+}
+
+.saldos-link-resumen:hover {
+  background: var(--aaf-accent-soft, #e0f2fe);
+  text-decoration: underline;
+}
+
+.saldos-link-resumen:focus-visible {
+  outline: 2px solid var(--aaf-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+/* Saldos mensuales: plegar/desplegar todos */
+.saldos-pliegue-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.saldos-pliegue-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.saldos-pliegue-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
