@@ -26,6 +26,36 @@ const METRICAS_ROWS = [
   'Cant. INV Diciembre'
 ] as const;
 
+// Años presentes en los datos (columnas ccAAAA / PPAAAA / INVAAAA) más los años por defecto
+function anosDesdeDatos(data: PatrimonioData | undefined): number[] {
+  const set = new Set<number>(ANOS_PATRIMONIO);
+  Object.values(data ?? {}).forEach((cols) => {
+    Object.keys(cols ?? {}).forEach((key) => {
+      const m = /^(?:cc|PP|INV)(\d{4})$/.exec(key);
+      if (m) set.add(Number(m[1]));
+    });
+  });
+  return [...set].sort((a, b) => a - b);
+}
+
+function construirEntries(
+  data: PatrimonioData | undefined,
+  anos: number[]
+): Record<string, Record<string, string>> {
+  const res: Record<string, Record<string, string>> = {};
+  MESES_PATRIMONIO.forEach((mes) => {
+    res[mes] = {};
+    anos.forEach((ano) => {
+      ['cc', 'PP', 'INV'].forEach((prefix) => {
+        const col = `${prefix}${ano}`;
+        const raw = data?.[mes]?.[col];
+        res[mes][col] = raw !== undefined && raw !== null && raw !== '' ? String(raw) : '';
+      });
+    });
+  });
+  return res;
+}
+
 function formatSpanishMiles(val: number): string {
   return val
     .toFixed(2)
@@ -38,20 +68,19 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
   onSavePatrimonio
 }) => {
   // Store editable strings per [mes][columna]
-  const [entries, setEntries] = useState<Record<string, Record<string, string>>>(() => {
-    const init: Record<string, Record<string, string>> = {};
-    MESES_PATRIMONIO.forEach((mes) => {
-      init[mes] = {};
-      ANOS_PATRIMONIO.forEach((ano) => {
-        ['cc', 'PP', 'INV'].forEach((prefix) => {
-          const col = `${prefix}${ano}`;
-          const raw = patrimonioData?.[mes]?.[col];
-          init[mes][col] = raw !== undefined && raw !== null && raw !== '' ? String(raw) : '';
-        });
-      });
-    });
-    return init;
-  });
+  const [entries, setEntries] = useState<Record<string, Record<string, string>>>(() =>
+    construirEntries(patrimonioData, anosDesdeDatos(patrimonioData))
+  );
+
+  // Años añadidos con el botón y aún no guardados
+  const [anosNuevos, setAnosNuevos] = useState<number[]>([]);
+
+  const anos = useMemo(() => {
+    const set = new Set<number>([...anosDesdeDatos(patrimonioData), ...anosNuevos]);
+    return [...set].sort((a, b) => a - b);
+  }, [patrimonioData, anosNuevos]);
+
+  const siguienteAno = anos.length > 0 ? anos[anos.length - 1] + 1 : new Date().getFullYear();
 
   const [invalidCell, setInvalidCell] = useState<{ mes: string; col: string } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(
@@ -60,19 +89,28 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
   const [saving, setSaving] = useState(false);
 
   React.useEffect(() => {
-    const next: Record<string, Record<string, string>> = {};
-    MESES_PATRIMONIO.forEach((mes) => {
-      next[mes] = {};
-      ANOS_PATRIMONIO.forEach((ano) => {
+    setEntries(construirEntries(patrimonioData, anosDesdeDatos(patrimonioData)));
+  }, [patrimonioData]);
+
+  const handleAnadirAno = () => {
+    const nuevo = siguienteAno;
+    setAnosNuevos((prev) => (prev.includes(nuevo) ? prev : [...prev, nuevo]));
+    setEntries((prev) => {
+      const next = { ...prev };
+      MESES_PATRIMONIO.forEach((mes) => {
+        next[mes] = { ...(prev[mes] || {}) };
         ['cc', 'PP', 'INV'].forEach((prefix) => {
-          const col = `${prefix}${ano}`;
-          const raw = patrimonioData?.[mes]?.[col];
-          next[mes][col] = raw !== undefined && raw !== null && raw !== '' ? String(raw) : '';
+          const col = `${prefix}${nuevo}`;
+          if (next[mes][col] === undefined) next[mes][col] = '';
         });
       });
+      return next;
     });
-    setEntries(next);
-  }, [patrimonioData]);
+    setFeedback({
+      type: 'success',
+      msg: `Añadida la columna ${nuevo} a las tablas. Pulsa "Guardar Patrimonio" para conservarla.`
+    });
+  };
 
   const handleEntryChange = (mes: string, col: string, value: string) => {
     if (invalidCell && invalidCell.mes === mes && invalidCell.col === col) {
@@ -107,7 +145,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
     let ultimoMes2026 = 'Enero';
     let totalUltimoMes2026 = 0.0;
 
-    ANOS_PATRIMONIO.forEach((ano) => {
+    anos.forEach((ano) => {
       const ccCol = `cc${ano}`;
       const ppCol = `PP${ano}`;
       const invCol = `INV${ano}`;
@@ -201,15 +239,15 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
       ultimoMes2026,
       totalUltimoMes2026
     };
-  }, [entries]);
+  }, [entries, anos]);
 
   const handleGuardarPatrimonio = async () => {
     setFeedback(null);
     setInvalidCell(null);
 
-    const ccCols = ANOS_PATRIMONIO.map((a) => `cc${a}`);
-    const ppCols = ANOS_PATRIMONIO.map((a) => `PP${a}`);
-    const invCols = ANOS_PATRIMONIO.map((a) => `INV${a}`);
+    const ccCols = anos.map((a) => `cc${a}`);
+    const ppCols = anos.map((a) => `PP${a}`);
+    const invCols = anos.map((a) => `INV${a}`);
     const todasColumnas = [...ccCols, ...ppCols, ...invCols];
 
     const datosNuevos: PatrimonioData = {};
@@ -252,7 +290,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
     bgSubheader: string,
     explicacion: string
   ) => {
-    const columnas = ANOS_PATRIMONIO.map((a) => `${prefix}${a}`);
+    const columnas = anos.map((a) => `${prefix}${a}`);
 
     return (
       <fieldset
@@ -318,14 +356,19 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
     <div className="panel-card">
       <div className="panel-header">
         <h2>Patrimonio</h2>
-        <button
-          type="button"
-          className="btn-green-action"
-          onClick={handleGuardarPatrimonio}
-          disabled={saving}
-        >
-          {saving ? 'Guardando...' : 'Guardar Patrimonio'}
-        </button>
+        <div className="header-actions">
+          <button type="button" className="btn-secondary" onClick={handleAnadirAno}>
+            + Añadir año {siguienteAno}
+          </button>
+          <button
+            type="button"
+            className="btn-green-action"
+            onClick={handleGuardarPatrimonio}
+            disabled={saving}
+          >
+            {saving ? 'Guardando...' : 'Guardar Patrimonio'}
+          </button>
+        </div>
       </div>
 
       {feedback && (
@@ -416,7 +459,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
                 <thead>
                   <tr>
                     <th className="tk-cell-lightgray text-center">Año</th>
-                    {ANOS_PATRIMONIO.map((ano) => (
+                    {anos.map((ano) => (
                       <th key={ano} className="tk-cell-orange text-center font-bold">
                         {ano}
                       </th>
@@ -427,7 +470,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
                   {/* Fila Total Enero */}
                   <tr>
                     <td className="tk-cell-orange font-bold text-left">Total Enero</td>
-                    {ANOS_PATRIMONIO.map((ano) => (
+                    {anos.map((ano) => (
                       <td
                         key={ano}
                         className="text-center font-bold"
@@ -441,7 +484,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
                   {/* Fila Total Diciembre */}
                   <tr>
                     <td className="tk-cell-orange font-bold text-left">Total Diciembre</td>
-                    {ANOS_PATRIMONIO.map((ano) => (
+                    {anos.map((ano) => (
                       <td
                         key={ano}
                         className="text-center font-bold"
@@ -465,7 +508,7 @@ export const PatrimonioView: React.FC<PatrimonioViewProps> = ({
                         >
                           {metrica}
                         </td>
-                        {ANOS_PATRIMONIO.map((ano) => (
+                        {anos.map((ano) => (
                           <td
                             key={ano}
                             className="text-center"
